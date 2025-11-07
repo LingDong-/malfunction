@@ -28,19 +28,23 @@ let mat = [1,0,0,1,0,0];
 cnv.addEventListener('mousedown',function(e){
   isdown = 1;
   pts.splice(0,Infinity);
-  pts.push([e.clientX/cnv.width,e.clientY/cnv.height]);
+  let rect = cnv.getBoundingClientRect();
+  let x = (e.clientX - rect.left)/cnv.width;
+  let y = (e.clientY - rect.top)/cnv.height;
+  pts.push([x,y]);
 })
 cnv.addEventListener('mousemove',function(e){
   if (isdown){
-    let x = e.clientX/cnv.width;
-    let y = e.clientY/cnv.height;
+    let rect = cnv.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/cnv.width;
+    let y = (e.clientY - rect.top)/cnv.height;
     if (Math.hypot(x-pts.at(-1)[0],y-pts.at(-1)[1])>0.01){
       pts.push([x,y]);
     }
     let points = pts.flat();
     points.shape = [pts.length,2];
     mat = fit_polygon_affine_nlls(points,template);
-    console.log(mat);
+    //console.log(mat);
   }
 })
 cnv.addEventListener('mouseup',function(){
@@ -48,7 +52,7 @@ cnv.addEventListener('mouseup',function(){
   let points = pts.flat();
   points.shape = [pts.length,2];
   mat = fit_polygon_affine_nlls(points,template);
-  console.log(mat);
+  //console.log(mat);
 })
 
 function animate(){
