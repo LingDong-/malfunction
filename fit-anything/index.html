@@ -61,6 +61,9 @@ let mat = [1,0,0,1,0,0];
 solve();
 
 function solve(){
+  if (template.length < 2 || pts.length < 2){
+    return;
+  }
   let points = pts.flat();
   points.shape = [pts.length,2];
   mat = fit_polygon_affine_nlls(points,template);
@@ -79,6 +82,17 @@ sel_tmpl.onchange = function(){
       template.push(0.5+0.5*Math.cos(ang));
       template.push(0.5+0.5*Math.sin(ang));
     }
+  }else if (sel_tmpl.value == 'star'){
+    template = [];
+    let r = Math.cos(2*Math.PI/5)/Math.cos(Math.PI/5);
+    for (let i = 0; i < 10; i++){
+      let ang = (i+0.5)*Math.PI/5;
+      let rad = (i&1)?1:r;
+      template.push(0.5+0.5*rad*Math.cos(ang));
+      template.push(0.5+0.5*rad*Math.sin(ang));
+    }
+  }else if (sel_tmpl.value == 'draw...'){
+    template = [];
   }
   template.shape = [template.length/2,2];
   solve();
@@ -109,21 +123,42 @@ cnv.addEventListener('mouseup',function(){
   solve();
 })
 
+cnv0.addEventListener('mousedown',function(e){
+  if (sel_tmpl.value == 'draw...'){
+    let rect = cnv0.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/cnv0.width;
+    let y = (e.clientY - rect.top)/cnv0.height;
+    template.push(x,y);
+    template.shape = [template.length/2,2];
+    solve();
+  }
+});
+  
+  
 function animate(){
   requestAnimationFrame(animate);
   
   ctx0.clearRect(0,0,cnv0.width,cnv0.height);
   ctx0.strokeStyle = "red";
+  ctx0.fillStyle = "red";
   ctx0.beginPath();
   for (let i = 0; i < template.length/2; i++){
-    let x = (template[i*2]-0.5)*0.8+0.5;
-    let y = (template[i*2+1]-0.5)*0.8+0.5;
+    let x = template[i*2];
+    let y = template[i*2+1];
     x*=cnv0.width;
     y*=cnv0.height;
     ctx0[i?'lineTo':'moveTo'](x,y);
   }
   ctx0.closePath();
   ctx0.stroke();
+  for (let i = 0; i < template.length/2; i++){
+    let x = template[i*2];
+    let y = template[i*2+1];
+    x*=cnv0.width;
+    y*=cnv0.height;
+    ctx0.fillRect(x-1.5,y-1.5,3,3);
+  }
+  
   
   
   ctx.clearRect(0,0,cnv.width,cnv.height);
