@@ -3,28 +3,68 @@
   body{
     font-family:sans-serif;
   }
+  td{
+    border: 1px solid black;
+  }
 </style>
 <body>
-
+  <h2 style="margin-bottom:10px;">Fit Anything</h2>
+  <i style="display:block;margin-bottom:10px;font-size:14px;">
+  A Demonstration of Levenberg Marquardt Algorithm at Solving Non-Linear Least Squares
+  <br>
+  for an Affine Transformation Matrix</i>
+  <table>
+    <tr><td>Template 
+      <select>
+        <option>triangle</option>
+        <option>quad</option>
+        <option>ellipse</option>
+        <option>star</option>
+        <option>draw...</option>
+      </select></td>
+      <td>Draw below to fit...</td>
+    </tr>
+    <tr>
+      <td id="cell0"></td>
+      <td id="cell1"></td>
+    </tr>
+  </table>
 </body>
 <script src="fit.js"></script>
 <script>
 
-
+  
+let cnv0 = document.createElement("canvas");
+cnv0.width = 200;
+cnv0.height = 200;
+document.getElementById("cell0").appendChild(cnv0);
+  
 let cnv = document.createElement("canvas");
 cnv.width = 200;
 cnv.height = 200;
-cnv.style="position:absolute;left:0px;top:0px;border:1px solid black"
-document.body.appendChild(cnv);
+document.getElementById("cell1").appendChild(cnv);
+  
 let ctx = cnv.getContext('2d');
 
-let pts = [];
+let pts = [[0.41,0.1675],[0.42,0.1675],[0.43,0.1675],[0.44,0.1725],[0.45,0.1825],[0.455,0.1925],[0.46,0.2025],[0.465,0.2125],[0.465,0.2225],[0.47,0.2325],[0.47,0.2475],[0.47,0.2575],[0.47,0.2675],[0.47,0.2825],[0.465,0.2925],[0.46,0.3025],[0.45,0.3175],[0.44,0.3225],[0.435,0.3325],[0.425,0.3375],[0.41,0.3525],[0.395,0.3625],[0.385,0.3775],[0.375,0.3825],[0.365,0.3925],[0.36,0.4025],[0.36,0.4175],[0.36,0.4275],[0.37,0.4325],[0.38,0.4425],[0.39,0.4425],[0.4,0.4475],[0.415,0.4475],[0.435,0.4475],[0.45,0.4475],[0.46,0.4475],[0.475,0.4475],[0.485,0.4475],[0.495,0.4425],[0.505,0.4425],[0.515,0.4375],[0.525,0.4375],[0.54,0.4325],[0.55,0.4275],[0.56,0.4225],[0.57,0.4125],[0.575,0.4025],[0.58,0.3925],[0.585,0.3825],[0.585,0.3725],[0.585,0.3625],[0.575,0.3575],[0.565,0.3525],[0.55,0.3475],[0.54,0.3475],[0.53,0.3475],[0.52,0.3475],[0.505,0.3475],[0.495,0.3525],[0.48,0.3575],[0.47,0.3625],[0.445,0.3775],[0.43,0.3925],[0.42,0.3975],[0.405,0.4125],[0.39,0.4275],[0.375,0.4425],[0.37,0.4525],[0.355,0.4675],[0.345,0.4825],[0.335,0.4875],[0.33,0.4975],[0.32,0.5075],[0.315,0.5175],[0.315,0.5325],[0.31,0.5425],[0.31,0.5575],[0.31,0.5675],[0.31,0.5775],[0.315,0.5875],[0.33,0.5975],[0.34,0.6025],[0.355,0.6025],[0.365,0.6075],[0.375,0.6075],[0.385,0.6075],[0.395,0.6125],[0.405,0.6125],[0.42,0.6125],[0.43,0.6125],[0.445,0.6125],[0.46,0.6125],[0.475,0.6125],[0.49,0.6125],[0.505,0.6125],[0.52,0.6125],[0.53,0.6075],[0.54,0.6075],[0.56,0.6075],[0.58,0.6025],[0.59,0.5975],[0.605,0.5925],[0.615,0.5875],[0.625,0.5825],[0.635,0.5725],[0.64,0.5625],[0.64,0.5525],[0.64,0.5425],[0.64,0.5325],[0.63,0.5225],[0.62,0.5175],[0.6,0.5125],[0.59,0.5075],[0.58,0.5075],[0.565,0.5025],[0.55,0.5025],[0.54,0.5025],[0.53,0.5025],[0.52,0.5025],[0.51,0.5025],[0.5,0.5025],[0.49,0.5025],[0.48,0.5025],[0.47,0.5075],[0.455,0.5175],[0.44,0.5225],[0.42,0.5375],[0.41,0.5475],[0.395,0.5575],[0.385,0.5625],[0.37,0.5775],[0.36,0.5875],[0.345,0.5975],[0.33,0.6125],[0.32,0.6225],[0.305,0.6375],[0.295,0.6475],[0.285,0.6575],[0.27,0.6725],[0.265,0.6825],[0.26,0.6925],[0.25,0.7025],[0.25,0.7125],[0.245,0.7225],[0.245,0.7325],[0.25,0.7425],[0.255,0.7525],[0.265,0.7625],[0.28,0.7675],[0.29,0.7725],[0.305,0.7775],[0.315,0.7825],[0.325,0.7825],[0.335,0.7825],[0.345,0.7875],[0.355,0.7875],[0.37,0.7925],[0.385,0.7925],[0.395,0.7975],[0.405,0.7975],[0.42,0.7975],[0.435,0.7975],[0.445,0.7975],[0.455,0.7975],[0.465,0.7975],[0.485,0.7975],[0.495,0.7975],[0.505,0.7975],[0.515,0.7975],[0.525,0.7975],[0.535,0.7975],[0.55,0.7975],[0.56,0.7925],[0.575,0.7875],[0.595,0.7825],[0.605,0.7825],[0.615,0.7775],[0.63,0.7725],[0.64,0.7675],[0.655,0.7625],[0.665,0.7575],[0.675,0.7475],[0.685,0.7425],[0.695,0.7375],[0.705,0.7325],[0.71,0.7225],[0.72,0.7125],[0.72,0.7025],[0.725,0.6925],[0.725,0.6825],[0.725,0.6725],[0.72,0.6625],[0.71,0.6575],[0.695,0.6475],[0.685,0.6425],[0.675,0.6375],[0.665,0.6325],[0.655,0.6275],[0.645,0.6225],[0.635,0.6225],[0.625,0.6225],[0.615,0.6225],[0.605,0.6175],[0.595,0.6125]];
+
 let template = [0, 0, 1, 0, 0.5, Math.sqrt(3)/2];
 template.shape = [template.length/2,2];
 let isdown = 0;
 
 let mat = [1,0,0,1,0,0];
+  
+solve();
 
+function solve(){
+  let points = pts.flat();
+  points.shape = [pts.length,2];
+  mat = fit_polygon_affine_nlls(points,template);
+}
+function show_template(){
+  
+}
+  
 cnv.addEventListener('mousedown',function(e){
   isdown = 1;
   pts.splice(0,Infinity);
@@ -41,42 +81,40 @@ cnv.addEventListener('mousemove',function(e){
     if (Math.hypot(x-pts.at(-1)[0],y-pts.at(-1)[1])>0.01){
       pts.push([x,y]);
     }
-    let points = pts.flat();
-    points.shape = [pts.length,2];
-    mat = fit_polygon_affine_nlls(points,template);
-    //console.log(mat);
+    solve();
   }
 })
 cnv.addEventListener('mouseup',function(){
   isdown = 0;
-  let points = pts.flat();
-  points.shape = [pts.length,2];
-  mat = fit_polygon_affine_nlls(points,template);
-  //console.log(mat);
+  solve();
 })
 
 function animate(){
   requestAnimationFrame(animate);
   ctx.clearRect(0,0,cnv.width,cnv.height);
+
+  if (pts.length>1){
+    ctx.strokeStyle = "red";
+    ctx.beginPath();
+    for (let i = 0; i < template.length/2; i++){
+      let [x,y] = template.slice(i*2,i*2+2);
+      let [a,b,c,d,e,f] = mat;
+      let x1 = a*x+b*y+e;
+      let y1 = c*x+d*y+f;
+      x1 *=cnv.width;
+      y1 *=cnv.height;
+      ctx[i?'lineTo':'moveTo'](x1,y1);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+  
   for (let i = 0; i < pts.length; i++){
     let [x,y] = pts[i];
     x*=cnv.width;
     y*=cnv.height;
     ctx.fillRect(x-1,y-1,2,2);
   }
-
-  ctx.beginPath();
-  for (let i = 0; i < template.length/2; i++){
-    let [x,y] = template.slice(i*2,i*2+2);
-    let [a,b,c,d,e,f] = mat;
-    let x1 = a*x+b*y+e;
-    let y1 = c*x+d*y+f;
-    x1 *=cnv.width;
-    y1 *=cnv.height;
-    ctx[i?'lineTo':'moveTo'](x1,y1);
-  }
-  ctx.closePath();
-  ctx.stroke();
 
 }
 animate();
