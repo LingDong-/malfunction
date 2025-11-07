@@ -23,10 +23,12 @@
         <option>draw...</option>
       </select></td>
       <td>Draw below to fit...</td>
+      <td>Transformation Matrix</td>
     </tr>
     <tr>
       <td id="cell0"></td>
       <td id="cell1"></td>
+      <td id="cell2"></td>
     </tr>
   </table>
   <div style="font-size:14px;margin-top:30px">
@@ -158,8 +160,10 @@ function animate(){
     y*=cnv0.height;
     ctx0.fillRect(x-1.5,y-1.5,3,3);
   }
-  
-  
+  ctx0.fillStyle="black";
+  ctx0.fillText("0",0,10);
+  ctx0.fillText("1",0,cnv0.height);
+  ctx0.fillText("1",cnv0.width-5,10);
   
   ctx.clearRect(0,0,cnv.width,cnv.height);
 
@@ -185,6 +189,18 @@ function animate(){
     y*=cnv.height;
     ctx.fillRect(x-1,y-1,2,2);
   }
+  
+  let [a,b,c,d,e,f] = mat;
+  function fmt(n){
+    return ((~~(n*1000))/1000).toString().padStart(7,' ');
+  }
+  document.getElementById("cell2").innerHTML = `
+    <pre style="width:200px;height:200px;font-size:12px;font-family:monospace;">
+⎡${fmt(a)} ${fmt(c)} ${fmt(e)}⎤
+⎢${fmt(b)} ${fmt(d)} ${fmt(f)}⎥
+⎣${fmt(0)} ${fmt(0)} ${fmt(1)}⎦
+    </pre>
+  `
 
 }
 animate();
