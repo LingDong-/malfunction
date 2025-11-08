@@ -1,0 +1,504 @@
+<meta charset="UTF-8">
+<meta name="description" content="another experiment">
+<style>
+a:link, a:visited, a:hover, a:active {
+  color: gainsboro;
+}
+</style>
+<body style="margin:0px;background:black;color:white;font-size:14px;">
+  <div style="position:absolute;left:10px;top:0px;font-family:sans-serif;line-height:20px;">
+    <h2>mesh-donut↔mug</h2>
+    <p>
+      Morphing a mesh from a donut to a coffee mug --
+      a visualization of the 
+      <a href="https://en.wikipedia.org/wiki/Homeomorphism">topologist's joke</a>.<br>
+      Compared to my <a href="../lkg-sdf-morph">other, SDF-based approach</a>, this is an onerous one:<br>
+      The 2D/3D coordinates of each vertex on the mesh is semi-programatically generated, then subdivided.<br>
+      See lower-right for the base 2D mesh that both the donut and the mug map to.<br>
+      There's gotta be a better way... but hey it works!
+    </p>
+  </div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128/build/three.min.js"></script>
+<script>
+let faces = [];
+let N = 24;
+
+function sigmoid (x,a){ 
+  a = 1-a;
+  let y = 0;
+  if (x<=0.5){
+    y = (Math.pow(2.0*x, 1.0/a))/2.0;
+  } else {
+    y = 1.0 - (Math.pow(2.0*(1.0-x), 1.0/a))/2.0;
+  }
+  return y;
+}
+function ogee(x,a){
+  let y = 0;
+  if (x<=0.5){
+    return (Math.pow(2.0*x, 1.0-a))/2.0;
+  } else {
+    return 1.0 - (Math.pow(2.0*(1.0-x), 1.0-a))/2.0;
+  }
+}
+
+for (let i = 0; i < N; i++){
+  let t0 = (i/N);
+  let t1 = (i+1)/N;
+  let a0 = t0*Math.PI*2-Math.PI/2;
+  let a1 = t1*Math.PI*2-Math.PI/2;
+  let aa = sigmoid(t0,0.3)*Math.PI*2-Math.PI/2;
+  let ab = sigmoid(t1,0.3)*Math.PI*2-Math.PI/2;
+  let ac = sigmoid((t0+0.5)%1,0.3)*Math.PI*2+Math.PI/2;
+  let ad = sigmoid((t1+0.5)%1,0.3)*Math.PI*2+Math.PI/2;
+  faces.push([
+    [70,70,[0,0,-70]],
+    [70+Math.cos(a0)*5,70+Math.sin(a0)*5,[Math.cos(aa)*80,Math.sin(aa)*80,-70]],
+    [70+Math.cos(a1)*5,70+Math.sin(a1)*5,[Math.cos(ab)*80,Math.sin(ab)*80,-70]],
+  ]);
+  faces.push([
+    [70+Math.cos(a0)*5,70+Math.sin(a0)*5,  [Math.cos(aa)*80,Math.sin(aa)*80,-70]],
+    [70+Math.cos(a1)*5,70+Math.sin(a1)*5,  [Math.cos(ab)*80,Math.sin(ab)*80,-70]],
+    [70+Math.cos(a1)*10,70+Math.sin(a1)*10,[Math.cos(ab)*80,Math.sin(ab)*80,100]],
+    [70+Math.cos(a0)*10,70+Math.sin(a0)*10,[Math.cos(aa)*80,Math.sin(aa)*80,100]],
+  ].reverse())
+  faces.push([
+    [70+Math.cos(a0)*10,70+Math.sin(a0)*10, [Math.cos(aa)*80,Math.sin(aa)*80,100]],
+    [70+Math.cos(a1)*10,70+Math.sin(a1)*10, [Math.cos(ab)*80,Math.sin(ab)*80,100]],
+    [70+Math.cos(a1)*20,70+Math.sin(a1)*20, [Math.cos(ab)*100,Math.sin(ab)*100,100]],
+    [70+Math.cos(a0)*20,70+Math.sin(a0)*20, [Math.cos(aa)*100,Math.sin(aa)*100,100]],
+  ].reverse())
+  faces.push([
+    [70+Math.cos(a0)*20,70+Math.sin(a0)*20, [Math.cos(aa)*100,Math.sin(aa)*100,100]],
+    [70+Math.cos(a1)*20,70+Math.sin(a1)*20, [Math.cos(ab)*100,Math.sin(ab)*100,100]],
+    [70+Math.cos(a1)*30,70+Math.sin(a1)*30, [Math.cos(ab)*100,Math.sin(ab)*100,(0.125<=t1&&t1<=0.875)?50:90]],
+    [70+Math.cos(a0)*30,70+Math.sin(a0)*30, [Math.cos(aa)*100,Math.sin(aa)*100,(0.125<=t0&&t0<=0.875)?50:90]],
+  ].reverse())
+  faces.push([
+    [70,180,[0,0,-100]],
+    [70+Math.cos(a0)*20,180+Math.sin(a0)*20, [Math.cos(-ac)*100,Math.sin(-ac)*100,-100]],
+    [70+Math.cos(a1)*20,180+Math.sin(a1)*20, [Math.cos(-ad)*100,Math.sin(-ad)*100,-100]],
+  ]);
+  faces.push([
+    [70+Math.cos(a0)*20,180+Math.sin(a0)*20, [Math.cos(-ac)*100,Math.sin(-ac)*100,-100]],
+    [70+Math.cos(a1)*20,180+Math.sin(a1)*20, [Math.cos(-ad)*100,Math.sin(-ad)*100,-100]],
+    [70+Math.cos(a1)*30,180+Math.sin(a1)*30, [Math.cos(-ad)*100,Math.sin(-ad)*100,(0.125<=(t1+0.5)%1&&(t1+0.5)%1<=0.875)?-50:-90]],
+    [70+Math.cos(a0)*30,180+Math.sin(a0)*30, [Math.cos(-ac)*100,Math.sin(-ac)*100,(0.125<=(t0+0.5)%1&&(t0+0.5)%1<=0.875)?-50:-90]],
+  ].reverse())
+
+  if (0.125 <= t0 && t0 < 0.875){
+    let t2 = t0;
+    let t3 = t1;
+    let j = 0;
+    let a2,a3;
+    for (j = 0; j < 4; j++){
+      a2 = t2*Math.PI*2-Math.PI/2;
+      a3 = t3*Math.PI*2-Math.PI/2;
+
+      let t4 = (t2-0.125)/0.75*0.6+0.2;
+      let t5 = (t3-0.125)/0.75*0.6+0.2;
+      let a4 = t4*Math.PI*2-Math.PI/2;
+      let a5 = t5*Math.PI*2-Math.PI/2;
+      faces.push([
+        [70+Math.cos(a2)*(30+j*10),70-(j*5)+Math.sin(a2)*(30+j*10),[Math.cos(aa)*100,Math.sin(aa)*100,50-j*10]],
+        [70+Math.cos(a3)*(30+j*10),70-(j*5)+Math.sin(a3)*(30+j*10),[Math.cos(ab)*100,Math.sin(ab)*100,50-j*10]],
+        [70+Math.cos(a5)*(40+j*10),65-(j*5)+Math.sin(a5)*(40+j*10),[Math.cos(ab)*100,Math.sin(ab)*100,50-j*10-10]],
+        [70+Math.cos(a4)*(40+j*10),65-(j*5)+Math.sin(a4)*(40+j*10),[Math.cos(aa)*100,Math.sin(aa)*100,50-j*10-10]],
+      ].reverse());
+      faces.push([
+        [70+Math.cos(a2)*(30+j*10),180+(j*5)-Math.sin(a2)*(30+j*10), [Math.cos(aa)*100,Math.sin(aa)*100,-50+j*10]],
+        [70+Math.cos(a3)*(30+j*10),180+(j*5)-Math.sin(a3)*(30+j*10), [Math.cos(ab)*100,Math.sin(ab)*100,-50+j*10]],
+        [70+Math.cos(a5)*(40+j*10),185+(j*5)-Math.sin(a5)*(40+j*10), [Math.cos(ab)*100,Math.sin(ab)*100,-50+j*10+10]],
+        [70+Math.cos(a4)*(40+j*10),185+(j*5)-Math.sin(a4)*(40+j*10), [Math.cos(aa)*100,Math.sin(aa)*100,-50+j*10+10]],
+      ]);
+      if (t0 == 0.125){
+        faces.push([
+          [70+Math.cos(a2)*(30+j*10),70-(j*5)+Math.sin(a2)*(30+j*10)],
+          [140,30+j*15, [0,-100,25-j*5]],
+          [140,45+j*15, [0,-100,25-j*5-5]],
+          [70+Math.cos(a4)*(40+j*10),65-(j*5)+Math.sin(a4)*(40+j*10)],
+        ]);
+        faces.push([
+          [70+Math.cos(a2)*(30+j*10),180+(j*5)-Math.sin(a2)*(30+j*10)],
+          [140,230-(10+j*15), [0,-100,-25+j*5]],
+          [140,230-(25+j*15), [0,-100,-25+j*5+5]],
+          [70+Math.cos(a4)*(40+j*10),185+(j*5)-Math.sin(a4)*(40+j*10)],
+        ].reverse());
+      }else if (t1 == 0.875){
+        faces.push([
+          [0,30+j*15, [0,-100,25-j*5]],
+          [70+Math.cos(a3)*(30+j*10),70-(j*5)+Math.sin(a3)*(30+j*10)],
+          [70+Math.cos(a5)*(40+j*10),65-(j*5)+Math.sin(a5)*(40+j*10)],
+          [0,45+j*15, [0,-100,25-j*5-5]],
+        ]);
+        faces.push([
+          [0,230-(10+j*15),  [0,-100,-25+j*5]],
+          [70+Math.cos(a3)*(30+j*10),180+(j*5)-Math.sin(a3)*(30+j*10)],
+          [70+Math.cos(a5)*(40+j*10),185+(j*5)-Math.sin(a5)*(40+j*10)],
+          [0,230-(25+j*15),  [0,-100,-25+j*5+5]],
+        ].reverse());
+      }
+      t2 = t4;
+      t3 = t5;
+    }
+    a2 = t2*Math.PI*2-Math.PI/2;
+    a3 = t3*Math.PI*2-Math.PI/2;
+    faces.push([
+      [70+Math.cos(a2)*(30+j*10),70-(j*5)+Math.sin(a2)*(30+j*10), [Math.cos(aa)*100,Math.sin(aa)*100,10]],
+      [70+Math.cos(a3)*(30+j*10),70-(j*5)+Math.sin(a3)*(30+j*10), [Math.cos(ab)*100,Math.sin(ab)*100,10]],
+      [70+Math.cos(a3)*(30+j*10),125,     [Math.cos(ab)*100,Math.sin(ab)*100,0]],
+      [70+Math.cos(a2)*(30+j*10),125,     [Math.cos(aa)*100,Math.sin(aa)*100,0]],
+    ].reverse());
+    faces.push([
+      [70+Math.cos(a2)*(30+j*10),180+(j*5)-Math.sin(a2)*(30+j*10), [Math.cos(aa)*100,Math.sin(aa)*100,-10]],
+      [70+Math.cos(a3)*(30+j*10),180+(j*5)-Math.sin(a3)*(30+j*10), [Math.cos(ab)*100,Math.sin(ab)*100,-10]],
+      [70+Math.cos(a3)*(30+j*10),125, [Math.cos(ab)*100,Math.sin(ab)*100,0]],
+      [70+Math.cos(a2)*(30+j*10),125, [Math.cos(aa)*100,Math.sin(aa)*100,0]],
+    ]);
+    if (t0 == 0.125){
+      faces.push([
+        [140,70-(j*5)+Math.sin(a2)*(30+j*10),[0,-100,5]],
+        [70+Math.cos(a2)*(30+j*10),70-(j*5)+Math.sin(a2)*(30+j*10)],
+        [70+Math.cos(a2)*(30+j*10),125],
+        [140,125,[0,-100,0]],
+      ].reverse());
+      faces.push([
+        [140,180+(j*5)-Math.sin(a2)*(30+j*10),[0,-100,-5]],
+        [70+Math.cos(a2)*(30+j*10),180+(j*5)-Math.sin(a2)*(30+j*10)],
+        [70+Math.cos(a2)*(30+j*10),125],
+        [140,125,[0,-100,0]],
+      ]);
+    }else if (t1 == 0.875){
+      faces.push([
+        [0,70-(j*5)+Math.sin(a3)*(30+j*10),[0,-100,5]],
+        [70+Math.cos(a3)*(30+j*10),70-(j*5)+Math.sin(a3)*(30+j*10)],
+        [70+Math.cos(a3)*(30+j*10),125],
+        [0,125,[0,-100,0]],
+      ]);
+      faces.push([
+        [0,180+(j*5)-Math.sin(a3)*(30+j*10),[0,-100,-5]],
+        [70+Math.cos(a3)*(30+j*10),180+(j*5)-Math.sin(a3)*(30+j*10)],
+        [70+Math.cos(a3)*(30+j*10),125],
+        [0,125,[0,-100,0]],
+      ].reverse());
+    }
+  }else{
+    faces.push([
+      [70+Math.cos(a1)*30,70+Math.sin(a1)*30],
+      [70+Math.cos(a0)*30,70+Math.sin(a0)*30],
+      [10+(t0+0.125)%1*8*60,20],
+      [10+(t1+0.125)%1*8*60,20],
+    ])
+    if (t0 > 0.5){
+      faces.at(-1).unshift(faces.at(-1).pop());
+    }
+    faces.push([
+      [70+Math.cos(a1)*30,180-Math.sin(a1)*30],
+      [70+Math.cos(a0)*30,180-Math.sin(a0)*30],
+      [10+(t0+0.125)%1*8*60,230],
+      [10+(t1+0.125)%1*8*60,230],
+    ].reverse());
+    if (t0 < 0.5){
+      faces.at(-1).unshift(faces.at(-1).pop());
+    }
+    if (t1 == 0.125){
+      faces.push([
+        [140,30],
+        [70+Math.cos(a1)*30,70+Math.sin(a1)*30],
+        [130,20],
+        [140,20],
+        
+      ])
+      faces.push([
+        [70+Math.cos(a1)*30,180-Math.sin(a1)*30],
+        [130,230],
+        [140,230],
+        [140,220],
+      ].reverse())
+    }else if (t0 == 0.875){
+      faces.push([
+        [70+Math.cos(a0)*30,70+Math.sin(a0)*30],
+        [10,20],
+        [0,20],
+        [0,30],
+      ].reverse())
+      faces.push([
+        [0,220],
+        [70+Math.cos(a0)*30,180-Math.sin(a0)*30],
+        [10,230],
+        [0,230],
+        
+      ])
+    }
+  }
+
+}
+
+for (let i = 0; i < 8; i++){
+  for (let j = 0; j < 4; j++){
+    let x0 = i*20-10;
+    let x1 = x0+20;
+    if (x0 < 0) x0 = 0;
+    if (x1 > 140) x1 = 140;
+    let a0 = -i/8*Math.PI*2-Math.PI/2;
+    let a1 = -(i+1)/8*Math.PI*2-Math.PI/2;
+    
+    function rot(p,th){
+      return [
+        p[0],
+        p[1]* Math.cos(th)-p[2]*Math.sin(th),
+        p[1]* Math.sin(th)+p[2]*Math.cos(th),
+      ]
+    }
+
+    let ps0 = [
+      rot([Math.cos(a0)*20,0,60+Math.sin(a0)*20],Math.PI/2+(j/4)*Math.PI/2),
+      rot([Math.cos(a1)*20,0,60+Math.sin(a1)*20],Math.PI/2+(j/4)*Math.PI/2),
+      rot([Math.cos(a1)*20,0,60+Math.sin(a1)*20],Math.PI/2+((j+1)/4)*Math.PI/2),
+      rot([Math.cos(a0)*20,0,60+Math.sin(a0)*20],Math.PI/2+((j+1)/4)*Math.PI/2),
+    ]
+    let ps1 = [
+      rot([Math.cos(a0)*20,0,60+Math.sin(a0)*20],(j/4)*Math.PI/2),
+      rot([Math.cos(a1)*20,0,60+Math.sin(a1)*20],(j/4)*Math.PI/2),
+      rot([Math.cos(a1)*20,0,60+Math.sin(a1)*20],((j+1)/4)*Math.PI/2),
+      rot([Math.cos(a0)*20,0,60+Math.sin(a0)*20],((j+1)/4)*Math.PI/2),
+    ]
+    faces.push([
+      [x0,j*5  ,[ps0[0][0],-100+ps0[0][1],-ps0[0][2]]],
+      [x1,j*5  ,[ps0[1][0],-100+ps0[1][1],-ps0[1][2]]],
+      [x1,j*5+5,[ps0[2][0],-100+ps0[2][1],-ps0[2][2]]],
+      [x0,j*5+5,[ps0[3][0],-100+ps0[3][1],-ps0[3][2]]],
+    ])
+    faces.push([
+      [x0,230+j*5. ,[ps1[0][0],-100+ps1[0][1],-ps1[0][2]]],
+      [x1,230+j*5. ,[ps1[1][0],-100+ps1[1][1],-ps1[1][2]]],
+      [x1,230+j*5+5,[ps1[2][0],-100+ps1[2][1],-ps1[2][2]]],
+      [x0,230+j*5+5,[ps1[3][0],-100+ps1[3][1],-ps1[3][2]]],
+    ])
+  }
+}
+
+function to_trigs(faces,b){
+  function getpt(p){
+    if (p[2] && b==1){
+      return p[2];
+    }else if (b == 2){
+      let t = p[0]/140;
+      let s;
+      if (p[1] <= 20){
+        s = p[1]/20*0.25
+      }else if (p[1]>=230){
+        s = (p[1]-230)/20*0.25+0.75;
+      }else{
+        s = ((p[1]-20)/210)*0.5+0.25;
+      }
+      let a1 = s * Math.PI*2+Math.PI-Math.PI/2;
+      let a0 = -t * Math.PI*2 - Math.PI/3.75;
+      function rot(p,th){
+        return [
+          p[0],
+          p[1]* Math.cos(th)-p[2]*Math.sin(th),
+          p[1]* Math.sin(th)+p[2]*Math.cos(th),
+        ]
+      }
+      let q = rot([Math.cos(a0)*40,0,80+Math.sin(a0)*40],a1);
+      return [q[0],-100+q[1],-q[2]]
+    }
+    return [p[0],p[1],0];
+  }
+  let trigs = [];
+  for (let i = 0; i < faces.length; i++){
+    for (let j = 1; j < faces[i].length-1; j++){
+      trigs.push([getpt(faces[i][0]),getpt(faces[i][j]),getpt(faces[i][j+1])])
+    }
+  }
+  return trigs;
+}
+
+
+function to_trigs_sdv(faces,b){
+  function torus(p){
+    let t = p[0]/140;
+    let s;
+    if (p[1] <= 20){
+      s = p[1]/20*0.25
+    }else if (p[1]>=230){
+      s = (p[1]-230)/20*0.25+0.75;
+    }else{
+      s = ((p[1]-20)/210)*0.5+0.25;
+    }
+    let a1 = s * Math.PI*2+Math.PI-Math.PI/2;
+    let a0 = -t * Math.PI*2 - Math.PI/3.75;
+    function rot(p,th){
+      return [
+        p[0],
+        p[1]* Math.cos(th)-p[2]*Math.sin(th),
+        p[1]* Math.sin(th)+p[2]*Math.cos(th),
+      ]
+    }
+    let q = rot([Math.cos(a0)*40,0,80+Math.sin(a0)*40],a1);
+    return [q[0],-100+q[1],-q[2]]
+  }
+  function getpt(p){
+    if (b==1){
+      return p[2];
+    }else if (b == 2){
+      return torus(p);
+    }
+    return [p[0],p[1],0];
+  }
+  function getmid(p0,p1){
+    return [
+      (p0[0]+p1[0])*0.5,
+      (p0[1]+p1[1])*0.5,
+        [
+        (p0[2][0]+p1[2][0])*0.5,
+        (p0[2][1]+p1[2][1])*0.5,
+        (p0[2][2]+p1[2][2])*0.5,
+      ]
+    ];
+  }
+
+  function subdiv(a,b,c){
+    let d = getmid(a, b);
+    let e = getmid(b, c);
+    let f = getmid(c, a);
+    return [[a,d,f],[d,b,e],[e,c,f],[d,e,f]];
+  }
+
+  let trigs = [];
+  for (let i = 0; i < faces.length; i++){
+    for (let j = 1; j < faces[i].length-1; j++){
+      // trigs.push([getpt(faces[i][0]),getpt(faces[i][j]),getpt(faces[i][j+1])])
+      let a = faces[i][0];
+      let b = faces[i][j];
+      let c = faces[i][j+1];
+      let ts = subdiv(a,b,c);
+
+      for (let n = 0; n < 1; n++){
+        let tts = [];
+        for (let k = 0; k < ts.length; k++){
+          tts.push(...subdiv(...ts[k]))
+        }
+        ts = tts;
+      }
+
+      trigs.push(...ts.map(t=>t.map(getpt)));
+    }
+  }
+  return trigs;
+}
+
+
+
+function draw_svg(polys,w,h,scale){
+  let o = `<svg xmlns="http://www.w3.org/2000/svg" width="${w*scale}" height="${h*scale}">`
+  for (let i = 0; i < polys.length; i++){
+    o += `<path stroke="white" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M `;
+    for (let j = 0; j < polys[i].length; j++){
+      let [x,y] = polys[i][j];
+      o += `${(~~((x*scale)*1000)) /1000} ${(~~((y*scale)*1000)) /1000} `;
+    }
+    o += `z" />\n`;
+  }
+  o += `</svg>`
+  return o;
+}
+
+
+
+for (let i = 0; i < faces.length; i++){
+  for (let j = 0; j < faces[i].length; j++){
+    let p = faces[i][j];
+    // if (!p[2]){
+      for (let ii = 0; ii < faces.length; ii++){
+        for (let jj = 0; jj < faces[ii].length; jj++){
+          if (!faces[ii][jj][2]) continue;
+          if (Math.hypot(faces[ii][jj][0]-p[0], faces[ii][jj][1]-p[1])<1){
+            if (!p[2]){
+              p[2] = faces[ii][jj][2];
+            }else{
+              let d = Math.hypot(faces[ii][jj][2][0]-p[2][0], faces[ii][jj][2][1]-p[2][1], faces[ii][jj][2][2]-p[2][2]);
+              if (d > 0.001){
+                console.error("bad!",p,faces[ii][jj],d);
+              }
+            }
+          }
+        }
+      }
+    // }
+  }
+}
+
+
+let svg = document.createElement("div");
+svg.style = "position:absolute;right:0px;bottom:0px"
+svg.innerHTML = draw_svg(faces,150,260,1);
+document.body.appendChild(svg);
+  
+let trigsA = to_trigs_sdv(faces,1);
+let trigsB = to_trigs_sdv(faces,2);
+
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 10000);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+function flattenTriangles(tris) {
+  const arr = [];
+  for (const tri of tris) {
+    for (const v of tri) arr.push(...v);
+  }
+  return new Float32Array(arr);
+}
+
+const positionsA = flattenTriangles(trigsA);
+const positionsB = flattenTriangles(trigsB);
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position', new THREE.BufferAttribute(positionsA.slice(), 3));
+
+const material = new THREE.MeshNormalMaterial({ wireframe: true, side: THREE.DoubleSide });
+
+const mesh = new THREE.Mesh(geometry, material);
+mesh.geometry.computeVertexNormals ()
+scene.add(mesh);
+
+camera.position.set(0,0,500);
+
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+
+  t += 0.01;
+  const lerpFactor = Math.sin(t)*0.5+0.5
+
+  const pos = geometry.attributes.position;
+  for (let i = 0; i < pos.count * 3; i++) {
+    pos.array[i] = positionsA[i]*(1-lerpFactor)+positionsB[i]*lerpFactor
+  }
+  pos.needsUpdate = true;
+
+
+  mesh.rotation.x += 0.013;
+  mesh.rotation.y += 0.007;
+  mesh.rotation.z =- Math.PI/2;
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+
+
+window.addEventListener('resize', function() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}, false);
+
+</script>
