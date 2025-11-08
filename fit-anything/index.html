@@ -1,0 +1,211 @@
+<meta charset="UTF-8">
+<meta name="description" content="non-linear least squares solver for affine transformation">
+<style>
+  body{
+    font-family:sans-serif;
+  }
+  td{
+    border: 1px solid black;
+  }
+</style>
+<body>
+  <h2 style="margin-bottom:10px;">Fit Anything</h2>
+  <i style="display:block;margin-bottom:10px;font-size:14px;">
+  A Demo of Levenberg-Marquardt Algorithm at Solving Non-Linear Least Squares
+  <br>
+  for an Affine Transformation Matrix</i>
+  <table>
+    <tr><td>Template 
+      <select id="sel-tmpl">
+        <option>triangle</option>
+        <option>quad</option>
+        <option>ellipse</option>
+        <option>star</option>
+        <option>draw...</option>
+      </select></td>
+      <td>Draw below to fit...</td>
+      <td>Transformation Matrix</td>
+    </tr>
+    <tr>
+      <td id="cell0"></td>
+      <td id="cell1"></td>
+      <td id="cell2"></td>
+    </tr>
+  </table>
+  <div style="font-size:14px;margin-top:30px">
+  This is a pure JavaScript <a href="fit.js">implementation</a> from scratch.<br>
+  Lingdong Huang 2025
+  </div>
+</body>
+<script src="fit.js"></script>
+<script>
+
+  
+let cnv0 = document.createElement("canvas");
+cnv0.width = 200;
+cnv0.height = 200;
+document.getElementById("cell0").appendChild(cnv0);
+let ctx0 = cnv0.getContext('2d');
+  
+let cnv = document.createElement("canvas");
+cnv.width = 200;
+cnv.height = 200;
+document.getElementById("cell1").appendChild(cnv);
+let ctx = cnv.getContext('2d');
+
+let pts = [[0.55,0.3325],[0.54,0.3475],[0.525,0.3675],[0.505,0.3975],[0.48,0.4275],[0.46,0.4625],[0.43,0.5025],[0.405,0.5425],[0.385,0.5775],[0.375,0.5925],[0.355,0.6325],[0.34,0.6675],[0.325,0.6925],[0.32,0.7025],[0.315,0.7175],[0.31,0.7325],[0.305,0.7475],[0.305,0.7625],[0.315,0.7725],[0.33,0.7725],[0.345,0.7775],[0.36,0.7775],[0.385,0.7775],[0.42,0.7775],[0.455,0.7775],[0.5,0.7675],[0.545,0.7525],[0.605,0.7275],[0.665,0.7025],[0.72,0.6775],[0.75,0.6675],[0.8,0.6425],[0.84,0.6275],[0.855,0.6225],[0.885,0.6125],[0.905,0.6025],[0.92,0.5975],[0.935,0.5875],[0.94,0.5775],[0.93,0.5625],[0.92,0.5525],[0.9,0.5375],[0.865,0.5125],[0.85,0.5025],[0.805,0.4725],[0.775,0.4425],[0.735,0.4175],[0.72,0.4025],[0.685,0.3725],[0.655,0.3525],[0.625,0.3225],[0.6,0.3025],[0.575,0.2825],[0.555,0.2725],[0.53,0.2525],[0.52,0.2475],[0.51,0.2375],[0.5,0.2375]];
+  
+let template = [0, 0, 1, 0, 0.5, Math.sqrt(3)/2];
+template.shape = [template.length/2,2];
+let isdown = 0;
+
+let mat = [1,0,0,1,0,0];
+  
+solve();
+
+function solve(){
+  if (template.length < 2 || pts.length < 2){
+    return;
+  }
+  let points = pts.flat();
+  points.shape = [pts.length,2];
+  mat = fit_polygon_affine_nlls(points,template);
+}
+
+let sel_tmpl = document.getElementById("sel-tmpl");
+sel_tmpl.onchange = function(){
+  if (sel_tmpl.value == 'triangle'){
+    template = [0, 0, 1, 0, 0.5, Math.sqrt(3)/2];
+  }else if (sel_tmpl.value == 'quad'){
+    template = [0, 0, 1, 0, 1,1, 0,1];
+  }else if (sel_tmpl.value == 'ellipse'){
+    template = [];
+    for (let i = 0; i < 32; i++){
+      let ang = i/32*Math.PI*2;
+      template.push(0.5+0.5*Math.cos(ang));
+      template.push(0.5+0.5*Math.sin(ang));
+    }
+  }else if (sel_tmpl.value == 'star'){
+    template = [];
+    let r = Math.cos(2*Math.PI/5)/Math.cos(Math.PI/5);
+    for (let i = 0; i < 10; i++){
+      let ang = (i+0.5)*Math.PI/5;
+      let rad = (i&1)?1:r;
+      template.push(0.5+0.5*rad*Math.cos(ang));
+      template.push(0.5+0.5*rad*Math.sin(ang));
+    }
+  }else if (sel_tmpl.value == 'draw...'){
+    template = [];
+  }
+  template.shape = [template.length/2,2];
+  solve();
+}
+  
+cnv.addEventListener('mousedown',function(e){
+  isdown = 1;
+  pts.splice(0,Infinity);
+  let rect = cnv.getBoundingClientRect();
+  let x = (e.clientX - rect.left)/cnv.width;
+  let y = (e.clientY - rect.top)/cnv.height;
+  pts.push([x,y]);
+})
+cnv.addEventListener('mousemove',function(e){
+  if (isdown){
+    let rect = cnv.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/cnv.width;
+    let y = (e.clientY - rect.top)/cnv.height;
+    if (Math.hypot(x-pts.at(-1)[0],y-pts.at(-1)[1])>0.01){
+      pts.push([x,y]);
+    }
+    solve();
+  }
+})
+cnv.addEventListener('mouseup',function(){
+  isdown = 0;
+//   console.log(pts);
+  solve();
+})
+
+cnv0.addEventListener('mousedown',function(e){
+  if (sel_tmpl.value == 'draw...'){
+    let rect = cnv0.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/cnv0.width;
+    let y = (e.clientY - rect.top)/cnv0.height;
+    template.push(x,y);
+    template.shape = [template.length/2,2];
+    solve();
+  }
+});
+  
+  
+function animate(){
+  requestAnimationFrame(animate);
+  
+  ctx0.clearRect(0,0,cnv0.width,cnv0.height);
+  ctx0.strokeStyle = "red";
+  ctx0.fillStyle = "red";
+  ctx0.beginPath();
+  for (let i = 0; i < template.length/2; i++){
+    let x = template[i*2];
+    let y = template[i*2+1];
+    x*=cnv0.width;
+    y*=cnv0.height;
+    ctx0[i?'lineTo':'moveTo'](x,y);
+  }
+  ctx0.closePath();
+  ctx0.stroke();
+  for (let i = 0; i < template.length/2; i++){
+    let x = template[i*2];
+    let y = template[i*2+1];
+    x*=cnv0.width;
+    y*=cnv0.height;
+    ctx0.fillRect(x-1.5,y-1.5,3,3);
+  }
+  ctx0.fillStyle="black";
+  ctx0.fillText("0",0,10);
+  ctx0.fillText("1",0,cnv0.height);
+  ctx0.fillText("1",cnv0.width-5,10);
+  
+  ctx.clearRect(0,0,cnv.width,cnv.height);
+
+  if (pts.length>1){
+    ctx.strokeStyle = "red";
+    ctx.beginPath();
+    for (let i = 0; i < template.length/2; i++){
+      let [x,y] = template.slice(i*2,i*2+2);
+      let [a,b,c,d,e,f] = mat;
+      let x1 = a*x+b*y+e;
+      let y1 = c*x+d*y+f;
+      x1 *=cnv.width;
+      y1 *=cnv.height;
+      ctx[i?'lineTo':'moveTo'](x1,y1);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+  
+  for (let i = 0; i < pts.length; i++){
+    let [x,y] = pts[i];
+    x*=cnv.width;
+    y*=cnv.height;
+    ctx.fillRect(x-1,y-1,2,2);
+  }
+  
+  let [a,b,c,d,e,f] = mat;
+  function fmt(n){
+    return ((~~(n*1000))/1000).toString().padStart(7,' ');
+  }
+  document.getElementById("cell2").innerHTML = `
+    <pre style="width:200px;height:200px;font-size:12px;font-family:monospace;">
+⎡${fmt(a)} ${fmt(c)} ${fmt(e)}⎤
+⎢${fmt(b)} ${fmt(d)} ${fmt(f)}⎥
+⎣${fmt(0)} ${fmt(0)} ${fmt(1)}⎦
+    </pre>
+  `
+
+}
+animate();
+
+  
+  
+</script>
