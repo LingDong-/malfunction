@@ -26,13 +26,15 @@
     let cnv = lacer(quilt,12,9);       // takes in web canvas or image, columns, rows
     document.body.appendChild(cnv);    // returns a canvas, click to fullscreen
   </pre>
-
+  
+  <select id="sel-dev"></select><br>
+  <textarea id="inp-cfg" style="width:700px;height:70px;font-size:12px">
+  
+  </textarea>
 </body>
 <script src="lkg-lace.js"></script>
 <script>
-  
-var config = {"configVersion":"1.0","serial":"LKG-PORT-00027","pitch":{"value":52.5890007019043},"slope":{"value":-7.21141242980957},"center":{"value":0.2267323136329651},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"DPI":{"value":324},"screenW":{"value":1536},"screenH":{"value":2048},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0}}
-  
+    
 function sdf_quilt(shader, viewW, viewH, tileCols, tileRows){
   let cnv = document.createElement("canvas");
   cnv.width = viewW*tileCols;
@@ -233,8 +235,40 @@ let quilt = sdf_quilt(`precision mediump float;
 
   }`,192,256,12,9)
 
-let lacer = lkg_interlace(config);
-let cnv = lacer(quilt,12,9);
-document.body.appendChild(cnv);
+
+
+var hardcode = {"LKG-2K-00000":{"configVersion":"1.0","serial":"LKG-2K-00000","pitch":{"value":49.79978561401367},"slope":{"value":5.48},"center":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":2560},"screenH":{"value":1600},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":338}},"LKG-4K-00000":{"configVersion":"1.0","serial":"LKG-4K-00000","pitch":{"value":50.07143783569336},"slope":{"value":-7.7},"center":{"value":0},"viewCone":{"value":40},"fringe":{"value":0},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":3840},"screenH":{"value":2160},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":283}},"LKG-8K-00000":{"configVersion":"1.0","serial":"LKG-8K-00000","pitch":{"value":38.054588317871094},"slope":{"value":-7.7},"center":{"value":0},"viewCone":{"value":40},"fringe":{"value":0},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":7680},"screenH":{"value":4320},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":280}},"LKG-PORT-":{"configVersion":"3.0","serial":"LKG-PORT-","pitch":{"value":52},"slope":{"value":-7},"center":{"value":0.5},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":1536},"screenH":{"value":2048},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":324}},"LKG-A":{"configVersion":"3.0","serial":"LKG-A","pitch":{"value":50},"slope":{"value":-7},"center":{"value":0.5},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":3840},"screenH":{"value":2160},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":283}},"LKG-B":{"configVersion":"3.0","serial":"LKG-B","pitch":{"value":42},"slope":{"value":-6},"center":{"value":0.3},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":7680},"screenH":{"value":4320},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":280}},"LKG-D":{"configVersion":"3.0","serial":"LKG-D","pitch":{"value":42},"slope":{"value":-6},"center":{"value":0.3},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":7680},"screenH":{"value":4320},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":136}},"LKG-Q":{"configVersion":"3.0","serial":"LKG-Q","pitch":{"value":42},"slope":{"value":-6},"center":{"value":0.3},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":7680},"screenH":{"value":4320},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":136.6}},"LKG-E":{"configVersion":"3.0","serial":"LKG-E","pitch":{"value":80.7},"slope":{"value":-6.3},"center":{"value":-0.3},"fringe":{"value":0},"viewCone":{"value":54},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":1440},"screenH":{"value":2560},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":491}},"LKG-F":{"configVersion":"3.0","serial":"LKG-F","pitch":{"value":52},"slope":{"value":-7},"center":{"value":0.5},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":1536},"screenH":{"value":2048},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":324}},"LKG-H":{"configVersion":"3.0","serial":"LKG-H","pitch":{"value":44.72},"slope":{"value":-7.45},"center":{"value":0},"fringe":{"value":0},"viewCone":{"value":50},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":2160},"screenH":{"value":3840},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"cellPatternMode":{"value":4},"subpixelCells":{"ROffsetX":-0.25,"ROffsetY":-0.31,"GOffsetX":-0.25,"GOffsetY":0.28,"BOffsetX":0.25,"BOffsetY":0},"ROffsetX":{"value":0.25},"ROffsetY":{"value":-0.31},"GOffsetX":{"value":0.25},"GOffsetY":{"value":0.28},"BOffsetX":{"value":-0.25},"BOffsetY":{"value":0},"DPI":{"value":283}},"LKG-J":{"configVersion":"3.0","serial":"LKG-J","pitch":{"value":44.72},"slope":{"value":-6.9},"center":{"value":0.5},"fringe":{"value":0},"viewCone":{"value":50},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":3840},"screenH":{"value":2160},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"cellPatternMode":{"value":2},"subpixelCells":{"ROffsetX":-0.31,"ROffsetY":0.25,"GOffsetX":0.28,"GOffsetY":0.25,"BOffsetX":0,"BOffsetY":-0.25},"ROffsetX":{"value":-0.31},"ROffsetY":{"value":-0.25},"GOffsetX":{"value":0.28},"GOffsetY":{"value":-0.25},"BOffsetX":{"value":0},"BOffsetY":{"value":0.25},"DPI":{"value":283}},"LKG-K":{"configVersion":"3.0","serial":"LKG-K","pitch":{"value":80.7},"slope":{"value":-6.3},"center":{"value":-0.3},"fringe":{"value":0},"viewCone":{"value":54},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":4320},"screenH":{"value":7680},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"cellPatternMode":{"value":2},"subpixelCells":{"ROffsetX":-0.31,"ROffsetY":0.25,"GOffsetX":0.28,"GOffsetY":0.25,"BOffsetX":0,"BOffsetY":-0.25},"ROffsetX":{"value":-0.31},"ROffsetY":{"value":-0.25},"GOffsetX":{"value":0.28},"GOffsetY":{"value":-0.25},"BOffsetX":{"value":0},"BOffsetY":{"value":0.25},"DPI":{"value":280}},"LKG-L":{"configVersion":"3.0","serial":"LKG-L","pitch":{"value":75},"slope":{"value":-7.2},"center":{"value":-0.2},"fringe":{"value":0},"viewCone":{"value":50},"invView":{"value":1},"verticalAngle":{"value":0},"screenW":{"value":7680},"screenH":{"value":4320},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0},"DPI":{"value":280}}};
+hardcode["LKG-PORT-00027"] = {"configVersion":"1.0","serial":"LKG-PORT-00027","pitch":{"value":52.5890007019043},"slope":{"value":-7.21141242980957},"center":{"value":0.2267323136329651},"fringe":{"value":0},"viewCone":{"value":40},"invView":{"value":1},"verticalAngle":{"value":0},"DPI":{"value":324},"screenW":{"value":1536},"screenH":{"value":2048},"flipImageX":{"value":0},"flipImageY":{"value":0},"flipSubp":{"value":0}}
+
+let sel_dev = document.getElementById("sel-dev");
+for (let k in hardcode){
+  let opt = document.createElement("option");
+  opt.innerHTML = k;
+  sel_dev.appendChild(opt);
+}
+sel_dev.value = "LKG-PORT-00027";
+let inp_cfg = document.getElementById("inp-cfg");
+  
+let lacer, cnv;
+  
+function redo(){
+  if (cnv) document.body.removeChild(cnv);
+  lacer = lkg_interlace(JSON.parse(inp_cfg.value));
+  cnv = lacer(quilt,12,9);
+  document.body.appendChild(cnv);
+}
+
+sel_dev.onchange = function(){
+  inp_cfg.value = JSON.stringify(hardcode[sel_dev.value]);
+  redo();
+}
+sel_dev.onchange();
+
+inp_cfg.onedit = function(){
+  redo();
+}
+
+redo();
+
   
 </script>
