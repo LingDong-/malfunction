@@ -91,9 +91,9 @@ async function main(){
   console.log('Loading model...');
   // await NN.loadModel();
   NN.model = await tf.loadLayersModel(
-    ("__URL__","models/tfjs-model-5026090469481548.json"),
+    /*__URL__*/"models/tfjs-model-5026090469481548.json",
     {weightUrlConverter:function(){
-      return ("__URL__","models/tfjs-model-5026090469481548.weights.bin")
+      return /*__URL__*/"models/tfjs-model-5026090469481548.weights.bin"
     }}
   );
   
