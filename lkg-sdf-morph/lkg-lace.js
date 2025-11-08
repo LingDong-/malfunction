@@ -1,3 +1,20 @@
+/*
+lkg-lace.js
+A minimal JS/WebGL snippet for generating lenticular image for Looking Glass display.
+
+  Unlike other solutions, this one does not assume that you're rendering a 3D scene, 
+  or require the Looking Glass Bridge software,
+  or require any other piece of software really,
+  it just takes any quilt image and turns it into a lenticular/lightfield image
+  which you can fullscreen on the display. That's it!
+
+  let config = {...};                // from your device or defaults below
+  let lacer = lkg_interlace(config); // returns a reusable function for your device
+  let cnv = lacer(quilt,12,9);       // takes in web canvas or image, columns, rows
+  document.body.appendChild(cnv);    // returns a canvas, click to fullscreen
+
+Lingdong Huang 2025
+*/
 function lkg_interlace(config){
   var W = config.screenW.value;
   var H = config.screenH.value;
@@ -162,3 +179,4 @@ function lkg_interlace(config){
   }
   return interlace;
 }
+

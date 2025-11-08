@@ -105,6 +105,12 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
             <rect x="6" y="6" width="12" height="12" fill="#111"/>
           </svg>
         </div>
+        <div class="bigbtn" id="btn-tab">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" >
+            <polygon points="7,6 18,12 7,18" fill="#111"/>
+            <rect x="4" y="4" width="16" height="16" stroke-width="2" fill="none" stroke="#111"/>
+          </svg>
+        </div>
       </div>
       <div style="font-weight:bold;margin-top:15px;font-size:20px;">malfunction</div>
       <i style="margin-bottom:20px;display:block;font-size:12px;">Web experiment IDE / preview</i>
@@ -190,15 +196,7 @@ function main(){
     logDiv.scrollTop = 100000;
   });
 
-  document.getElementById("btn-run").onclick = function(){
-    FILES[CURFILE].content = CML.getValue();
-    document.getElementById("btn-stop").click();
-    document.getElementById("out").innerHTML = "";
-    document.getElementById("log").innerHTML = "";
-    let iframe = document.createElement("iframe");
-    iframe.style = "width:100%;height:100%;border:none;";
-    document.getElementById("out").appendChild(iframe);
-    let doc = iframe.contentDocument || iframe.contentWindow.document;
+  function make_html(){
     let html = FILES['index.html'].content;
     let blobs = {};
     for (let k in FILES){
@@ -206,13 +204,24 @@ function main(){
       let bb = URL.createObjectURL(new Blob([FILES[k].content], {type:guess_type(k)}));
       blobs[k] = bb;
     }
-    html = html.replaceAll(
+    return html.replaceAll(
       /(src|href)=["']([^"']+)["']/g,
       (match, attr, path) => {
         const newPath = blobs[path] ?? path;
         return `${attr}="${newPath}"`;
       }
     );
+  }
+
+  function run_in_tab(){
+    FILES[CURFILE].content = CML.getValue();
+    document.getElementById("btn-stop").click();
+    document.getElementById("log").innerHTML = "";
+    let iframe = document.createElement("iframe");
+    iframe.style = "width:100%;height:100%;border:none;";
+    document.getElementById("out").appendChild(iframe);
+    let doc = iframe.contentDocument || iframe.contentWindow.document;
+    let html = make_html();
     html = `
       <script>
         (function() {
@@ -236,6 +245,46 @@ function main(){
     doc.write(html);
     doc.close();
   }
+
+  const bootcode = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body>
+    <script>
+      const channel = new BroadcastChannel('preview-sync');
+      channel.postMessage({ type: 'request-update' });
+      channel.onmessage = (e) => {
+        if (e.data.type === 'html') {
+          document.open();
+          document.write(e.data.html);
+          document.close();
+        }
+      };
+      window.addEventListener('beforeunload', () => channel.close());
+    <\/script>
+    </body>
+    </html>`;
+  const bootblob = new Blob([bootcode], { type: 'text/html' });
+  const booturl = URL.createObjectURL(bootblob);
+
+  function run_new_tab(){
+    FILES[CURFILE].content = CML.getValue();
+    document.getElementById("btn-stop").click();
+    let win = window.open(booturl, 'preview');
+  }
+
+  let channel = new BroadcastChannel('preview-sync');
+  channel.onmessage = function(e){
+    if (e.origin === location.origin && e.source === window) return;
+    if (e.data.type === 'request-update') {
+      const renderedHTML = make_html();
+      channel.postMessage({ type: 'html', html: renderedHTML });
+    }
+  }
+
+  document.getElementById("btn-run").onclick = run_in_tab;
+  document.getElementById("btn-tab").onclick = run_new_tab;
   document.getElementById("btn-stop").onclick = function(){
     document.getElementById("out").innerHTML = "";
   }
