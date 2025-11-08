@@ -90,10 +90,16 @@ async function main(){
 
   console.log('Loading model...');
   // await NN.loadModel();
-  NN.model = await tf.loadLayersModel(
-    /*__URL__*/"models/tfjs-model-5026090469481548.json",
-    {weightUrlConverter:function(){
-      return /*__URL__*/"models/tfjs-model-5026090469481548.weights.bin"
+  
+  NN.model = await tf.loadLayersModel(".",
+    {fetchFunc:async function(){
+      if (!window._mow){
+        window._mow = 1;
+        return fetch(/*__URL__*/"models/tfjs-model-5026090469481548.json");
+      }else{
+        window._mow = 0;
+        return fetch(/*__URL__*/"models/tfjs-model-5026090469481548.weights.bin");
+      }
     }}
   );
   
