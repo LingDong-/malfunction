@@ -13,14 +13,13 @@ function lkg_interlace(config){
   `;
   var hpc_LightfieldFragShaderGLSL = `precision mediump float;
   varying vec2 texCoords;
-
   // Calibration values
-  float tilt = ${H/(W*config.slope.value)};
-  float pitch = ${((config.pitch.value * W) / config.DPI.value) * Math.cos(Math.atan(1.0 / config.slope.value))};
+  float tilt = float(${(H/(W*config.slope.value))});
+  float pitch = float(${((config.pitch.value * W) / config.DPI.value) * Math.cos(Math.atan(1.0 / config.slope.value))});
   float center = float(${config.center.value});
   int invView = 0;
-  float subp = ${1/(W*3)};
-  float displayAspect = ${W/H};
+  float subp = float(${1/(W*3)});
+  float displayAspect = float(${W/H});
 
   // Quilt settings
   uniform vec3 tile;
