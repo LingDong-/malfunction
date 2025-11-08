@@ -87,12 +87,16 @@ function clack(){
 }
 
 async function main(){
-  console.log('Loading Dataset data...');
-  await NN.loadData();
-  console.log('Done.')
 
   console.log('Loading model...');
-  await NN.loadModel();
+  // await NN.loadModel();
+  NN.model = await tf.loadLayersModel(
+    ("__URL__","models/tfjs-model-5026090469481548.json"),
+    {weightUrlConverter:function(){
+      return ("__URL__","models/tfjs-model-5026090469481548.weights.bin")
+    }}
+  );
+  
   console.log('Done.');
 
   function untilReady(vars) {
