@@ -37,17 +37,22 @@ Click on a link below to explore!
 `;
 
 for (let i = 0; i < projs.length; i++){
-  let ind = fs.readFileSync(projs[i]+"/index.html").toString();
-  const match = ind.match(
-    /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i
-  );
-  let desc = match ? match[1].trim() : '';
-  html += `<div onclick="window.location.href='/${projs[i]}'" style="display:inline-block;width:240px;height:100px;border:1px solid silver;margin:10px;border-radius:4px;background:white;overflow:hidden;cursor:pointer">
-  <div style="margin:10px;">
-    <b><a href="${projs[i]}">${projs[i]}</a></b>
-    <p style="font-size:13px">${desc}</p>
-  </div>
-  </div>`
+  try{
+    let ind = fs.readFileSync(projs[i]+"/index.html").toString();
+    const match = ind.match(
+      /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i
+    );
+    let desc = match ? match[1].trim() : '';
+    if (!desc.length) continue;
+    html += `<div onclick="window.location.href='/${projs[i]}'" style="display:inline-block;width:240px;height:100px;border:1px solid silver;margin:10px;border-radius:4px;background:white;overflow:hidden;cursor:pointer">
+    <div style="margin:10px;">
+      <b><a href="${projs[i]}">${projs[i]}</a></b>
+      <p style="font-size:13px">${desc}</p>
+    </div>
+    </div>`
+  }catch(e){
+    continue;
+  }
 }
 
 

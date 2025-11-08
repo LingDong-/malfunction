@@ -120,8 +120,9 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
       <button id="btn-pull">Pull ⤵</button>
       <button id="btn-push">Push ⤴</button>
     </div>
-    <button id="btn-fnew" style="position:absolute;left:10px;top:275px">+</button>
-    <button id="btn-fdel" style="position:absolute;left:40px;top:275px">-</button>
+    <button id="btn-fnew" style="position:absolute;left:10px;top:275px;width:25px;height:22px">+</button>
+    <button id="btn-fdel" style="position:absolute;left:40px;top:275px;width:25px;height:22px">-</button>
+    <button id="btn-fbin" style="position:absolute;left:70px;top:275px;width:25px;height:22px;font-size:10px">01</button>
     <div id="dir" style="position:absolute;left:10px;top:300px;width:185px;height:calc(100% - 245px);overflow:scroll;font-size:14px;">
       
     </div>
@@ -135,7 +136,14 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
 
 
 function main(){
-
+  function shortid(){
+    var id = "";
+    for (var i = 0; i < 6; i++){
+      id+=String.fromCharCode(~~(Math.random()*26)+0x41);
+    }
+    return id;
+  }
+  let channelID = shortid();
   function guess_type(path) {
     const ext = path.split('.').pop().toLowerCase();
     return {
@@ -151,6 +159,18 @@ function main(){
       svg: 'image/svg+xml',
       txt: 'text/plain'
     }[ext] || 'application/octet-stream';
+  }
+  function guess_is_bin(path){
+    const ext = path.split('.').pop().toLowerCase();
+    return !({
+      html: true,
+      htm:  true,
+      js:   true,
+      css:  true,
+      json: true,
+      svg:  true,
+      txt:  true,
+    }[ext]);
   }
 
   let FILES;
@@ -201,16 +221,53 @@ function main(){
     let blobs = {};
     for (let k in FILES){
       if (k == "index.html") continue;
+      if (blobs[k]){
+        URL.revokeObjectURL(blobs[k]);
+      }
       let bb = URL.createObjectURL(new Blob([FILES[k].content], {type:guess_type(k)}));
       blobs[k] = bb;
     }
-    return html.replaceAll(
+    html = html.replaceAll(
       /(src|href)=["']([^"']+)["']/g,
       (match, attr, path) => {
         const newPath = blobs[path] ?? path;
         return `${attr}="${newPath}"`;
       }
     );
+    html = html.replaceAll(
+      /\/\*__URL__\*\/\s*["']([^"']+)["']/g,
+      (match, path) => {
+        const newPath = blobs[path] ?? path;
+        return `"${newPath}"`;
+      }
+    )
+    html = `
+    <script>
+      window.__blob_map = ${JSON.stringify(blobs)};
+      window.__orig_fetch = window.fetch;
+      window.fetch = async function(url, opts) {
+        let url0 = url;
+        let res;
+        try{
+          res = await window.__orig_fetch(url0, opts);
+          if (res.ok) return res;
+        }catch(e){};
+        try{
+          url = window.__blob_map[url0];
+          res = await window.__orig_fetch(url, opts);
+          if (res.ok) return res;
+        }catch(e){};
+        try{
+          url = new URL(url0, 'http://example.com/').pathname.replace(/^\\/+/, '');
+          url = window.__blob_map[url];
+          res = await window.__orig_fetch(url, opts);
+          if (res.ok) return res;
+        }catch(e){};
+        return await window.__orig_fetch(url0, opts);
+      };
+    <\/script>
+    `+html;
+    return html;
   }
 
   function run_in_tab(){
@@ -252,7 +309,7 @@ function main(){
     <head><meta charset="utf-8"></head>
     <body>
     <script>
-      const channel = new BroadcastChannel('preview-sync');
+      const channel = new BroadcastChannel('preview-sync-${channelID}');
       channel.postMessage({ type: 'request-update' });
       channel.onmessage = (e) => {
         if (e.data.type === 'html') {
@@ -274,7 +331,7 @@ function main(){
     let win = window.open(booturl, 'preview');
   }
 
-  let channel = new BroadcastChannel('preview-sync');
+  let channel = new BroadcastChannel('preview-sync-'+channelID);
   channel.onmessage = function(e){
     if (e.origin === location.origin && e.source === window) return;
     if (e.data.type === 'request-update') {
@@ -289,22 +346,42 @@ function main(){
     document.getElementById("out").innerHTML = "";
   }
 
-  function encodeContentForGitHub(str) {
-    const utf8Bytes = new TextEncoder().encode(str);
+  function arrayBufferToBase64(buffer) {
     let binary = '';
-    for (let i = 0; i < utf8Bytes.length; i++) {
-      binary += String.fromCharCode(utf8Bytes[i]);
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, chunk);
     }
     return btoa(binary);
   }
-  function decodeContentFromGitHub(b64) {
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
+
+  function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    return new TextDecoder().decode(bytes);
+    return bytes.buffer;
   }
+
+  function encodeContentForGitHub(content) {
+    let isBinary = typeof content != 'string';
+    if (isBinary) {
+      return arrayBufferToBase64(content);
+    } else {
+      const utf8Bytes = new TextEncoder().encode(content);
+      return arrayBufferToBase64(utf8Bytes);
+    }
+  }
+  function decodeContentFromGitHub(b64, isBinary) {
+    const buffer = base64ToArrayBuffer(b64);
+    if (isBinary) return buffer;
+    return new TextDecoder().decode(buffer);
+  }
+  
 
   document.getElementById("btn-pull").onclick = async function(){
     let [user,repo,proj] = document.getElementById("inp-repo").value.split('/');
@@ -345,12 +422,18 @@ function main(){
         syslog(`[err] ${res.status} ${res.statusText}`);
       }else{
         const data = await res.json();
-        let content = decodeContentFromGitHub(data.content.replace(/\n/g, ''));
+        let gib = guess_is_bin(path);
+        // console.log(path,gib);
+        let content = decodeContentFromGitHub(data.content.replace(/\n/g, ''), gib);
         let sha = data.sha;
+        if (CURFILE == path){
+          CML.setValue(content);
+        }
         FILES[path] = {content,sha};
       }
     }
     CURFILE = Object.keys(FILES)[0];
+    CML.setValue(FILES[CURFILE].content);
     make_explorer();
     syslog(`[log] done.`);
   }
@@ -422,18 +505,52 @@ function main(){
     CURFILE = ans;
     make_explorer();
   }
-  document.getElementById("btn-fdel").onclick = function(){
-    if (CURFILE == 'index.html'){
+  function delete_file(k){
+    if (k == 'index.html'){
       syslog(`[err] index.html must not be deleted`);
       return;
     }
-    if (FILES[CURFILE].sha){
-      FILES[CURFILE].deleted = true;
-    }else{
-      delete FILES[CURFILE];
+    if (!confirm(`deleting file: ${k}. you cannot undo this action.`)){
+      return;
     }
-    CURFILE = Object.keys(FILES).filter(x=>!FILES[x].deleted)[0];
+    if (FILES[k].sha){
+      FILES[k].deleted = true;
+    }else{
+      delete FILES[k];
+    }
+    if (CURFILE == k){
+      CURFILE = Object.keys(FILES).filter(x=>!FILES[x].deleted)[0];
+    }
     make_explorer();
+  }
+  document.getElementById("btn-fdel").onclick = function(){
+    delete_file(CURFILE);
+  }
+  document.getElementById("btn-fbin").onclick = function(){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const arrayBuffer = await file.arrayBuffer();
+      let ans = prompt("upload binary: specify path/file.ext", file.name);
+      if (!ans) return;
+      if (FILES[ans]){
+        if (!FILES[ans].deleted){
+          syslog(`[err] file exists.`);
+          return;
+        }
+        FILES[ans].deleted = false;
+        FILES[ans].content = arrayBuffer;
+      }else{
+        FILES[ans] = {content:arrayBuffer}
+      }
+      document.body.removeChild(input);
+      make_explorer();
+    };
+    input.click();
   }
 
   document.getElementById("edit").addEventListener('keydown', function(e) {
@@ -471,18 +588,28 @@ function main(){
       div.classList.add("filename");
       div.innerHTML = k;
       div.onclick = function(){
-        CURFILE = k;
-        Array.from(document.getElementsByClassName("filename")).forEach(x=>x.style.background="none");
-        div.style.background = "gainsboro";
-        CML.setValue(FILES[CURFILE].content);
-        if (k.endsWith(".html")){
-          CML.setOption("mode","htmlmixed");
-        }else if (k.endsWith(".js")){
-          CML.setOption("mode","javascript");
-        }else if (k.endsWith(".css")){
-          CML.setOption("mode","css");
+        if (typeof FILES[k].content == 'string'){
+          CURFILE = k;
+          Array.from(document.getElementsByClassName("filename")).forEach(x=>x.style.background="none");
+          div.style.background = "gainsboro";
+          CML.setValue(FILES[CURFILE].content);
+          if (k.endsWith(".html")){
+            CML.setOption("mode","htmlmixed");
+          }else if (k.endsWith(".js")){
+            CML.setOption("mode","javascript");
+          }else if (k.endsWith(".css")){
+            CML.setOption("mode","css");
+          }else{
+            CML.setOption("mode",'text/plain');
+          }
         }else{
-          CML.setOption("mode",'text/plain');
+          let ans = confirm("binary file: click ok to preview in a new tab, click cancel to DELETE the file");
+          if (ans){
+            let bb = URL.createObjectURL(new Blob([FILES[k].content], {type:guess_type(k)}));
+            window.open(bb, 'file');
+          }else{
+            delete_file(k);
+          }
         }
       }
       document.getElementById("dir").appendChild(div);
@@ -493,7 +620,7 @@ function main(){
 
   function autosave(){
     setTimeout(autosave,1000);
-    FILES[CURFILE].content = CML.getValue();
+    if (FILES[CURFILE]) FILES[CURFILE].content = CML.getValue();
     sessionStorage.setItem("state",JSON.stringify({
       repo:document.getElementById("inp-repo").value,
       token:document.getElementById("inp-tok").value,
