@@ -335,17 +335,17 @@ function fit_polygon_affine_nlls(points,template){
 }
 
 function fit_polygon_resampled_affine_lstsq(points,template){
-  let A = zeros(points.length*2,6);
-  let b = zeros(points.length*2,1);
-  for (let i = 0; i < points.length; i++){
-    A[i*12+0] = template[i][0];
-    A[i*12+2] = template[i][1];
+  let A = zeros(points.length,6);
+  let b = zeros(points.length,1);
+  for (let i = 0; i < points.shape[0]; i++){
+    A[i*12+0] = template[i*2+0];
+    A[i*12+2] = template[i*2+1];
     A[i*12+4] = 1;
-    A[i*12+7] = template[i][0];
-    A[i*12+9] = template[i][1];
+    A[i*12+7] = template[i*2+0];
+    A[i*12+9] = template[i*2+1];
     A[i*12+11] = 1;
-    b[i*2] =   points[i][0];
-    b[i*2+1] = points[i][1];
+    b[i*2] =   points[i*2+0];
+    b[i*2+1] = points[i*2+1];
   }
   let x = lstsq_qr(A,b);
   return x;
