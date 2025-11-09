@@ -92,7 +92,7 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
 <style>.CodeMirror { height: 100%; }</style>
 
 <body style="background:white;margin:0px;width:100%;height:100%;overflow:hidden;font-family:sans-serif">
-  <div id="side" style="overflow:hidden;position:absolute;left:0px;top:0px;width:200px;height:100%;background:white">
+  <div id="side" class="darkable" style="overflow:hidden;position:absolute;left:0px;top:0px;width:200px;height:100%;background:white">
     <div id="menu" style="position:absolute;left:10px;top:10px;width:180px;height:250px;font-size:14px;border-bottom:1px solid silver;line-height:20px;">
       <div style="text-align:right">
         <div class="bigbtn" id="btn-run">
@@ -111,6 +111,11 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
             <rect x="4" y="4" width="16" height="16" stroke-width="2" fill="none" stroke="#111"/>
           </svg>
         </div>
+        <div class="bigbtn" id="btn-dark" style="position:absolute;left:0px;top:0px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" >
+            <path d="M12 4 A8 8 0 1 0 20 12 A5 5 0 1 1 12 4 Z" fill="#111"/>
+          </svg>
+        </div>
       </div>
       <div style="font-weight:bold;margin-top:15px;font-size:20px;">malfunction</div>
       <i style="margin-bottom:20px;display:block;font-size:12px;">Web experiment IDE / preview</i>
@@ -127,9 +132,9 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
       
     </div>
   </div>
-  <div id="edit" style="position:absolute;left:200px;top:0px;width:calc(50% - 100px);height:100%;border-right:1px solid silver; border-left:1px solid silver"></div>
-  <div id="out" style="position:absolute;left:calc(50% + 100px);top:0px;width:calc(50% - 100px);height:calc(100% - 200px);"></div>
-  <div id="log" style="position:absolute;left:calc(50% + 100px);top:calc(100% - 200px);width:calc(50% - 110px);height:190px;border-top:1px solid silver;font-size:14px;font-family:monospace;padding:5px;overflow:scroll;"></div>
+  <div id="edit" class="darkable" style="position:absolute;left:200px;top:0px;width:calc(50% - 100px);height:100%;border-right:1px solid silver; border-left:1px solid silver"></div>
+  <div id="out" style="background:white;position:absolute;left:calc(50% + 102px);top:0px;width:calc(50% - 102px);height:calc(100% - 200px);"></div>
+  <div id="log" class="darkable" style="background:white;position:absolute;left:calc(50% + 102px);top:calc(100% - 200px);width:calc(50% - 112px);height:190px;border-top:1px solid silver;font-size:14px;font-family:monospace;padding:5px;overflow:scroll;"></div>
 
 </body>
 `];
@@ -190,7 +195,7 @@ function main(){
     },
   }
   
-  let CURFILE = Object.keys(FILES)[0];
+  let CURFILE = first_file();
 
   function syslog(t){
     console.log(t);
@@ -382,13 +387,20 @@ function main(){
     return new TextDecoder().decode(buffer);
   }
   
+  document.getElementById("btn-dark").onclick = function(){
+    Array.from(document.getElementsByClassName("darkable")).forEach(x=>x.style.filter=x.style.filter?"":"invert(90%)");
+  }
 
   document.getElementById("btn-pull").onclick = async function(){
     let [user,repo,proj] = document.getElementById("inp-repo").value.split('/');
     let token = document.getElementById("inp-tok").value;
-    const repoRes = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
-      headers: { Authorization: `token ${token}` }
-    });
+    let header;
+    if (token.length){
+      header = {
+        headers: { Authorization: `token ${token}` }
+      }
+    }
+    const repoRes = await fetch(`https://api.github.com/repos/${user}/${repo}`, header);
     if (!repoRes.ok){
       syslog(`[err] ${repoRes.status} ${repoRes.statusText}`);
       return;
@@ -396,9 +408,7 @@ function main(){
     const repoInfo = await repoRes.json();
     const branch = repoInfo.default_branch;
 
-    const treeRes = await fetch(`https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`, {
-      headers: { Authorization: `token ${token}` }
-    });
+    const treeRes = await fetch(`https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`, header);
     if (!treeRes.ok){
       syslog(`[err] ${treeRes.status} ${treeRes.statusText}`);
       return;
@@ -415,9 +425,7 @@ function main(){
       let {path,sha} = files[i];
       path = path.split('/').slice(1).join('/');
       syslog(`[log] downloading ${path}...`);
-      const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${proj}/${path}`, {
-        headers: { Authorization: `token ${token}`},
-      });
+      const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${proj}/${path}`, header);
       if (!res.ok){
         syslog(`[err] ${res.status} ${res.statusText}`);
       }else{
@@ -432,10 +440,21 @@ function main(){
         FILES[path] = {content,sha};
       }
     }
-    CURFILE = Object.keys(FILES)[0];
+    CURFILE = first_file();
     CML.setValue(FILES[CURFILE].content);
     make_explorer();
     syslog(`[log] done.`);
+
+    let uc = encodeURIComponent(`${user}/${repo}/${proj}`);
+    const newUrl = `${window.location.origin}${window.location.pathname}?p=${uc}`;
+    history.replaceState(null, '', newUrl);
+  }
+
+  let query;
+  if (query = new URLSearchParams(window.location.search).get("p")){
+    console.log(query);
+    document.getElementById("inp-repo").value = query;
+    document.getElementById("btn-pull").onclick();
   }
 
   document.getElementById("btn-push").onclick = async function(){
@@ -487,6 +506,9 @@ function main(){
       }
     }
     syslog(`[log] done.`);
+    let uc = encodeURIComponent(`${user}/${repo}/${path}`);
+    const newUrl = `${window.location.origin}${window.location.pathname}?p=${uc}`;
+    history.replaceState(null, '', newUrl);
   }
 
   document.getElementById("btn-fnew").onclick = function(){
@@ -505,6 +527,9 @@ function main(){
     CURFILE = ans;
     make_explorer();
   }
+  function first_file(){
+    return Object.keys(FILES).filter(x=>((!FILES[x].deleted)&&(typeof FILES[x].content == 'string')))[0];
+  }
   function delete_file(k){
     if (k == 'index.html'){
       syslog(`[err] index.html must not be deleted`);
@@ -519,7 +544,7 @@ function main(){
       delete FILES[k];
     }
     if (CURFILE == k){
-      CURFILE = Object.keys(FILES).filter(x=>!FILES[x].deleted)[0];
+      CURFILE = first_file();
     }
     make_explorer();
   }
