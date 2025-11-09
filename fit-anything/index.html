@@ -32,13 +32,42 @@
       <td id="cell2"></td>
     </tr>
   </table>
+  
+  
+  <h3 style="margin-bottom:10px;">Fit Some Things</h3>
+  <i style="display:block;margin-bottom:10px;font-size:14px;">
+  A Demo of Solving Linear Least Squares
+  for an Affine Transformation Matrix
+  <br>
+  on Resampled Outlines
+  </i>
+  
+  <table>
+    <tr><td>Template 
+      <select id="sel-tmpl-l">
+        <option>triangle</option>
+        <option>quad</option>
+        <option>ellipse</option>
+      </select></td>
+      <td>Draw below to fit...</td>
+      <td>Transformation Matrix</td>
+    </tr>
+    <tr>
+      <td id="cell3"></td>
+      <td id="cell4"></td>
+      <td id="cell5"></td>
+    </tr>
+  </table>
+  
+  
   <div style="font-size:14px;margin-top:30px">
-  This is a pure JavaScript <a href="fit.js">implementation</a> from scratch.<br>
+  These demos are powered by a pure JavaScript <a href="fit.js">implementation</a> from scratch.<br>
   Lingdong Huang 2025
   </div>
+  
 </body>
 <script src="fit.js"></script>
-<script>
+<script>{
 
   
 let cnv0 = document.createElement("canvas");
@@ -206,6 +235,227 @@ function animate(){
 }
 animate();
 
+}</script>
+
+
+
+
+
+
+
+<script>{
+    
+    
+function getResampledByCount(poly0,count){
+  let poly = [];
+  let acc_len = [0];
+  let tot_len = 0;
+  for (let i = 0; i < poly0.length-1; i++){
+    let [x0,y0] = poly0[i];
+    let [x1,y1] = poly0[i+1];
+    tot_len += Math.hypot(x1-x0,y1-y0);
+    acc_len.push(tot_len);
+  }
+  function getPointAtLength(l){
+    for (let i = poly0.length-1; i >= 0; i--){
+      if (acc_len[i] <= l){
+        let t = (l - acc_len[i])/(acc_len[i+1] - acc_len[i]);
+        return [
+          poly0[i][0] * (1-t) + poly0[i+1][0] * t,
+          poly0[i][1] * (1-t) + poly0[i+1][1] * t,
+        ];
+      }
+    }
+    return [0,0];
+  }
+  let spacing = tot_len/count;
+  for (let f = 0; f < tot_len; f += spacing){
+    poly.push(getPointAtLength(f));
+  }
+  if(poly.length < count) poly.push(poly0[poly0.length-1]);
+  return poly.slice(0,count);
+}
+    
+let NSAMP = 64;
+    
+let cnv0 = document.createElement("canvas");
+cnv0.width = 200;
+cnv0.height = 200;
+document.getElementById("cell3").appendChild(cnv0);
+let ctx0 = cnv0.getContext('2d');
+  
+let cnv = document.createElement("canvas");
+cnv.width = 200;
+cnv.height = 200;
+document.getElementById("cell4").appendChild(cnv);
+let ctx = cnv.getContext('2d');
+
+let pts = [[0.55,0.3325],[0.54,0.3475],[0.525,0.3675],[0.505,0.3975],[0.48,0.4275],[0.46,0.4625],[0.43,0.5025],[0.405,0.5425],[0.385,0.5775],[0.375,0.5925],[0.355,0.6325],[0.34,0.6675],[0.325,0.6925],[0.32,0.7025],[0.315,0.7175],[0.31,0.7325],[0.305,0.7475],[0.305,0.7625],[0.315,0.7725],[0.33,0.7725],[0.345,0.7775],[0.36,0.7775],[0.385,0.7775],[0.42,0.7775],[0.455,0.7775],[0.5,0.7675],[0.545,0.7525],[0.605,0.7275],[0.665,0.7025],[0.72,0.6775],[0.75,0.6675],[0.8,0.6425],[0.84,0.6275],[0.855,0.6225],[0.885,0.6125],[0.905,0.6025],[0.92,0.5975],[0.935,0.5875],[0.94,0.5775],[0.93,0.5625],[0.92,0.5525],[0.9,0.5375],[0.865,0.5125],[0.85,0.5025],[0.805,0.4725],[0.775,0.4425],[0.735,0.4175],[0.72,0.4025],[0.685,0.3725],[0.655,0.3525],[0.625,0.3225],[0.6,0.3025],[0.575,0.2825],[0.555,0.2725],[0.53,0.2525],[0.52,0.2475],[0.51,0.2375],[0.5,0.2375]];
+let points = [];
+let template = getResampledByCount([[0,0], [1,0], [0.5,Math.sqrt(3)/2], [0,0]], NSAMP).flat();
+template.shape = [template.length/2,2];
+let isdown = 0;
+
+let mat = [1,0,0,1,0,0];
+  
+solve();
+
+function solve(){
+  if (template.length < 2 || pts.length < 2){
+    return;
+  }
+  points = getResampledByCount(pts,NSAMP).flat();
+  points.shape = [points.length/2,2];
+  mat = fit_polygon_resampled_affine_lstsq(points,template);
+}
+
+let sel_tmpl = document.getElementById("sel-tmpl-l");
+sel_tmpl.onchange = function(){
+  if (sel_tmpl.value == 'triangle'){
+    template = [0, 0, 1, 0, 0.5, Math.sqrt(3)/2];
+  }else if (sel_tmpl.value == 'quad'){
+    template = [0, 0, 1, 0, 1,1, 0,1];
+  }else if (sel_tmpl.value == 'ellipse'){
+    template = [];
+    for (let i = 0; i < 32; i++){
+      let ang = i/32*Math.PI*2;
+      template.push(0.5+0.5*Math.cos(ang));
+      template.push(0.5+0.5*Math.sin(ang));
+    }
+  }else if (sel_tmpl.value == 'star'){
+    template = [];
+    let r = Math.cos(2*Math.PI/5)/Math.cos(Math.PI/5);
+    for (let i = 0; i < 10; i++){
+      let ang = (i+0.5)*Math.PI/5;
+      let rad = (i&1)?1:r;
+      template.push(0.5+0.5*rad*Math.cos(ang));
+      template.push(0.5+0.5*rad*Math.sin(ang));
+    }
+  }else if (sel_tmpl.value == 'draw...'){
+    template = [];
+  }
+  template.shape = [template.length/2,2];
+  solve();
+}
+  
+cnv.addEventListener('mousedown',function(e){
+  isdown = 1;
+  pts.splice(0,Infinity);
+  let rect = cnv.getBoundingClientRect();
+  let x = (e.clientX - rect.left)/cnv.width;
+  let y = (e.clientY - rect.top)/cnv.height;
+  pts.push([x,y]);
+})
+cnv.addEventListener('mousemove',function(e){
+  if (isdown){
+    let rect = cnv.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/cnv.width;
+    let y = (e.clientY - rect.top)/cnv.height;
+    if (Math.hypot(x-pts.at(-1)[0],y-pts.at(-1)[1])>0.01){
+      pts.push([x,y]);
+    }
+    solve();
+  }
+})
+cnv.addEventListener('mouseup',function(){
+  isdown = 0;
+//   console.log(pts);
+  solve();
+})
+
+cnv0.addEventListener('mousedown',function(e){
+  if (sel_tmpl.value == 'draw...'){
+    let rect = cnv0.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/cnv0.width;
+    let y = (e.clientY - rect.top)/cnv0.height;
+    template.push(x,y);
+    template.shape = [template.length/2,2];
+    solve();
+  }
+});
   
   
-</script>
+function animate(){
+  requestAnimationFrame(animate);
+  
+  ctx0.clearRect(0,0,cnv0.width,cnv0.height);
+  ctx0.strokeStyle = "red";
+  ctx0.fillStyle = "red";
+  ctx0.beginPath();
+  for (let i = 0; i < template.length/2; i++){
+    let x = template[i*2];
+    let y = template[i*2+1];
+    x*=cnv0.width;
+    y*=cnv0.height;
+    ctx0[i?'lineTo':'moveTo'](x,y);
+  }
+  ctx0.closePath();
+  ctx0.stroke();
+  for (let i = 0; i < template.length/2; i++){
+    let x = template[i*2];
+    let y = template[i*2+1];
+    x*=cnv0.width;
+    y*=cnv0.height;
+    ctx0.fillRect(x-1.5,y-1.5,3,3);
+  }
+  ctx0.fillStyle="black";
+  ctx0.fillText("0",0,10);
+  ctx0.fillText("1",0,cnv0.height);
+  ctx0.fillText("1",cnv0.width-5,10);
+  
+  ctx.clearRect(0,0,cnv.width,cnv.height);
+
+
+  for (let i = 0; i < template.length/2; i++){
+    let [x,y] = template.slice(i*2,i*2+2);
+    let [a,b,c,d,e,f] = mat;
+    let x1 = a*x+b*y+e;
+    let y1 = c*x+d*y+f;
+    x1 *=cnv.width;
+    y1 *=cnv.height;
+    ctx.fillStyle = "red";
+    ctx.fillRect(x1-1,y1-1,2,2);
+
+    let x2 = points[i*2];
+    let y2 = points[i*2+1];
+    x2*=cnv.width;
+    y2*=cnv.height;
+    ctx.fillStyle = "black";
+    ctx.fillRect(x2-1,y2-1,2,2);
+    
+    ctx.strokeStyle="rgba(0,0,0,0.2)"
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+  }
+  
+  
+  
+
+  let [a,b,c,d,e,f] = mat;
+  function fmt(n){
+    return ((~~(n*1000))/1000).toString().padStart(7,' ');
+  }
+  document.getElementById("cell5").innerHTML = `
+    <pre style="width:200px;height:200px;font-size:12px;font-family:monospace;">
+⎡${fmt(a)} ${fmt(c)} ${fmt(e)}⎤
+⎢${fmt(b)} ${fmt(d)} ${fmt(f)}⎥
+⎣${fmt(0)} ${fmt(0)} ${fmt(1)}⎦
+    </pre>
+  `
+
+}
+animate();
+
+    
+    
+}</script>
+
+
+
+
+
+
+
+
