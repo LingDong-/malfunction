@@ -1,3 +1,16 @@
+// fit.js
+// solving for affine transformation with (NL/L)LS
+// matrices and vectors are encoded as flat JS arrays with a shape property,
+// e.g. Object.assign([1,2,3,4],{shape:[2 /*rows*/, 2 /*cols*/]})
+// usage:
+//   [mat,cost] = fit_polygon_affine_nlls(points,template,guess);
+//   [mat,cost] = fit_polygon_resampled_affine_lstsq(points,template);
+//   [a,b,c,d,e,f] = mat;
+//      |a c e|   |x|
+//   -> |b d f| x |y|
+//      |0 0 1|   |1|
+// Lingdong Huang 2025
+
 function norm(x){
   let s=0;
   for (let i = 0; i < x.length; i++){
@@ -274,7 +287,7 @@ function polygon_residuals_affine(template,lambda_reg){
     return res;
   }
 }
-function fit_polygon_affine_nlls(points,template){
+function fit_polygon_affine_nlls(points,template,x0=[1,0,0,1,0,0]){
   function normalize(X){
     let c = [0,0];
     for (let i = 0; i < X.shape[0]; i++){
@@ -308,13 +321,15 @@ function fit_polygon_affine_nlls(points,template){
   let [template_n, cT, sT] = normalize(template);
   let [points_n, cP, sP] = normalize(points);
 
-  let x0 = [1,0,0,1,0,0];
   x0.shape = [6,1];
+  
+  let resfn = polygon_residuals_affine(template_n,0.1);
+  
   let [res,delta] = 
 //   gauss_newton(
   levenberg_marquardt(
     x0, points_n, 
-    polygon_residuals_affine(template_n,0.1), 
+    resfn, 
     [[-3, -3, -3, -3, -1, -1], [3, 3, 3, 3, 1, 1]],
     200, 1e-6);
 
@@ -331,7 +346,12 @@ function fit_polygon_affine_nlls(points,template){
   let tg = matmul(Ag,cT);
   tg[0] = cP[0] - tg[0] + sP * t[0];
   tg[1] = cP[1] - tg[1] + sP * t[1];
-  return [Ag[0],Ag[2],Ag[1],Ag[3],...tg];
+  
+  let ans = [Ag[0],Ag[2],Ag[1],Ag[3],...tg];
+  ans.shape = [6,1];
+  
+  let cost = resfn(res,points_n).reduce((a,b)=>(a+b),0);
+  return [ans,cost];
 }
 
 function lstsq_rss(A,x,b){
@@ -342,6 +362,7 @@ function lstsq_rss(A,x,b){
   }
   return s;
 }
+
 
 function fit_polygon_resampled_affine_lstsq(points,template){
   let A = zeros(points.length,6);
