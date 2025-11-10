@@ -311,7 +311,7 @@ function fit_polygon_affine_nlls(points,template){
   let x0 = [1,0,0,1,0,0];
   x0.shape = [6,1];
   let [res,delta] = 
-  // gauss_newton(
+//   gauss_newton(
   levenberg_marquardt(
     x0, points_n, 
     polygon_residuals_affine(template_n,0.1), 
@@ -331,7 +331,16 @@ function fit_polygon_affine_nlls(points,template){
   let tg = matmul(Ag,cT);
   tg[0] = cP[0] - tg[0] + sP * t[0];
   tg[1] = cP[1] - tg[1] + sP * t[1];
-  return [...Ag,...tg];
+  return [Ag[0],Ag[2],Ag[1],Ag[3],...tg];
+}
+
+function lstsq_rss(A,x,b){
+  let r = matmul(A,x);
+  let s = 0;
+  for (let i = 0; i < r.length; i++){
+    s += (r[i]-b[i])**2;
+  }
+  return s;
 }
 
 function fit_polygon_resampled_affine_lstsq(points,template){
@@ -348,5 +357,12 @@ function fit_polygon_resampled_affine_lstsq(points,template){
     b[i*2+1] = points[i*2+1];
   }
   let x = lstsq_qr(A,b);
-  return x;
+  let s = lstsq_rss(A,x,b);
+  return [x,s];
 }
+
+
+
+
+
+
