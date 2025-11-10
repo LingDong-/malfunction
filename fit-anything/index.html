@@ -33,6 +33,11 @@
     </tr>
   </table>
   
+  <p style="font-size:14px;">
+    The local optimizer is supplemented by a regularization term, a bound, and a multi-start strategy,
+    for it to behave.<br>
+    For simpler problems, the following simpler solution can be used to find global optima in one shot:
+  </p>
   
   <h3 style="margin-bottom:10px;">Fit Some Things</h3>
   <i style="display:block;margin-bottom:10px;font-size:14px;">
@@ -89,6 +94,7 @@ template.shape = [template.length/2,2];
 let isdown = 0;
 
 let mat = [1,0,0,1,0,0];
+let NGUESS = 8;
   
 solve();
 
@@ -98,15 +104,37 @@ function solve(){
   }
   let points = pts.flat();
   points.shape = [pts.length,2];
-  mat = fit_polygon_affine_nlls(points,template);
+//   let cost;
+//   ;[mat,cost] = fit_polygon_affine_nlls(points,template);
+  
+  let guesses = [
+    [1,0,0,1,0,0],
+    [-1,0,0,-1,0,0],
+    [1,0,0,-1,0,0],
+    [-1,0,0,1,0,0],
+    [0,1,1,0,0,0],
+    [0,-1,-1,0,0,0],
+    [0,-1,1,0,0,0],
+    [0,1,-1,0,0,0],
+  ]
+  let cost = Infinity;
+  for (let i = 0; i < NGUESS; i++){
+    let [m,c] = fit_polygon_affine_nlls(points,template,guesses[i]);
+    if (c < cost){
+      mat = m;
+      cost = c;
+    }
+  }
 }
 
 let sel_tmpl = document.getElementById("sel-tmpl");
 sel_tmpl.onchange = function(){
   if (sel_tmpl.value == 'triangle'){
     template = [0, 0, 1, 0, 0.5, Math.sqrt(3)/2];
+    NGUESS = 8;
   }else if (sel_tmpl.value == 'quad'){
     template = [0, 0, 1, 0, 1,1, 0,1];
+    NGUESS = 8;
   }else if (sel_tmpl.value == 'ellipse'){
     template = [];
     for (let i = 0; i < 32; i++){
@@ -114,6 +142,7 @@ sel_tmpl.onchange = function(){
       template.push(0.5+0.5*Math.cos(ang));
       template.push(0.5+0.5*Math.sin(ang));
     }
+    NGUESS = 1;
   }else if (sel_tmpl.value == 'star'){
     template = [];
     let r = Math.cos(2*Math.PI/5)/Math.cos(Math.PI/5);
@@ -123,8 +152,10 @@ sel_tmpl.onchange = function(){
       template.push(0.5+0.5*rad*Math.cos(ang));
       template.push(0.5+0.5*rad*Math.sin(ang));
     }
+    NGUESS = 1;
   }else if (sel_tmpl.value == 'draw...'){
     template = [];
+    NGUESS = 8;
   }
   template.shape = [template.length/2,2];
   solve();
