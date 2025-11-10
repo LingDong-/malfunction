@@ -39,7 +39,7 @@
   A Demo of Solving Linear Least Squares
   for an Affine Transformation Matrix
   <br>
-  on Resampled Outlines
+  on Outlines Isotropically Resampled in PCA frame
   </i>
   
   <table>
@@ -275,6 +275,56 @@ function getResampledByCount(poly0,count){
   if(poly.length < count) poly.push(poly0[poly0.length-1]);
   return poly.slice(0,count);
 }
+
+function pca(pts){
+  let mean = [0,0];
+  for (let p of pts){
+    mean[0] += p[0];
+    mean[1] += p[1];
+  }
+  mean[0] /= pts.length;
+  mean[1] /= pts.length;
+  let covXX = 0, covXY = 0, covYY = 0;
+  for (let p of pts){
+    let dx = p[0] - mean[0];
+    let dy = p[1] - mean[1];
+    covXX += dx*dx;
+    covXY += dx*dy;
+    covYY += dy*dy;
+  }
+  covXX /= pts.length;
+  covXY /= pts.length;
+  covYY /= pts.length;
+  let trace = covXX + covYY;
+  let det = covXX*covYY - covXY*covXY;
+  let temp = Math.sqrt((trace*trace)/4 - det);
+  let eig1 = [trace/2 + temp, trace/2 - temp];
+  let eigvec1;
+  if (Math.abs(covXY) > 1e-6){
+    eigvec1 = [eig1[0] - covYY, covXY];
+  } else {
+    eigvec1 = [1, 0];
+  }
+  let mag = Math.hypot(...eigvec1);
+  eigvec1 = [eigvec1[0]/mag, eigvec1[1]/mag];
+  let eigvec2 = [-eigvec1[1], eigvec1[0]];
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  for (let p of pts){
+    let dx = p[0] - mean[0];
+    let dy = p[1] - mean[1];
+    let projX = dx*eigvec1[0] + dy*eigvec1[1];
+    let projY = dx*eigvec2[0] + dy*eigvec2[1];
+    minX = Math.min(minX, projX);
+    maxX = Math.max(maxX, projX);
+    minY = Math.min(minY, projY);
+    maxY = Math.max(maxY, projY);
+  }
+  let w = maxX - minX;
+  let h = maxY - minY;
+  return [eigvec1, mean, w/h];
+}
+    
     
 let NSAMP = 72;
 let RSAMP = 24;
@@ -305,12 +355,27 @@ function solve(){
   if (template.length < 2 || pts.length < 2){
     return;
   }
-  let ptre = getResampledByCount(pts,NSAMP);
-  
+//   let ptre = getResampledByCount(pts,NSAMP);
 //   let rss;
 //   points = ptre.flat();
 //   points.shape = [points.length/2,2];
 //   ;[mat,rss] = fit_polygon_resampled_affine_lstsq(points,template);
+  
+  let [eig,mean,ar] = pca(pts);
+  let ang = Math.atan2(eig[1],eig[0]);
+  let costh = Math.cos(-ang);
+  let sinth = Math.sin(-ang);
+  let ptro = pts.map(([x,y])=>([
+    (x-mean[0])*costh-(y-mean[1])*sinth,
+    ((x-mean[0])*sinth+(y-mean[1])*costh)*ar
+  ]));
+  let ptre = getResampledByCount(ptro,NSAMP);
+  costh = Math.cos(ang);
+  sinth = Math.sin(ang);
+  ptre = ptre.map(([x,y])=>([
+    (x*costh-(y/ar)*sinth)+mean[0],
+    (x*sinth+(y/ar)*costh)+mean[1]
+  ]));
 
   let rmin = Infinity;
   let imin = 0;
@@ -331,27 +396,19 @@ function solve(){
 let sel_tmpl = document.getElementById("sel-tmpl-l");
 sel_tmpl.onchange = function(){
   if (sel_tmpl.value == 'triangle'){
-    template = [0, 0, 1, 0, 0.5, Math.sqrt(3)/2];
+    template = getResampledByCount([[0,0], [1,0], [0.5,Math.sqrt(3)/2], [0,0]], NSAMP).flat();
+    RSAMP = NSAMP/3;
   }else if (sel_tmpl.value == 'quad'){
-    template = [0, 0, 1, 0, 1,1, 0,1];
+    template = getResampledByCount([[0,0], [1,0], [1,1], [0,1], [0,0]], NSAMP).flat();
+    RSAMP = NSAMP/4;
   }else if (sel_tmpl.value == 'ellipse'){
     template = [];
-    for (let i = 0; i < 32; i++){
-      let ang = i/32*Math.PI*2;
+    for (let i = 0; i < NSAMP; i++){
+      let ang = i/NSAMP*Math.PI*2;
       template.push(0.5+0.5*Math.cos(ang));
       template.push(0.5+0.5*Math.sin(ang));
     }
-  }else if (sel_tmpl.value == 'star'){
-    template = [];
-    let r = Math.cos(2*Math.PI/5)/Math.cos(Math.PI/5);
-    for (let i = 0; i < 10; i++){
-      let ang = (i+0.5)*Math.PI/5;
-      let rad = (i&1)?1:r;
-      template.push(0.5+0.5*rad*Math.cos(ang));
-      template.push(0.5+0.5*rad*Math.sin(ang));
-    }
-  }else if (sel_tmpl.value == 'draw...'){
-    template = [];
+    RSAMP = 1;
   }
   template.shape = [template.length/2,2];
   solve();
