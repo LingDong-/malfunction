@@ -364,5 +364,3 @@ function fit_polygon_resampled_affine_lstsq(points,template){
 
 
 
-
-
