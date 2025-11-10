@@ -203,8 +203,8 @@ function animate(){
     for (let i = 0; i < template.length/2; i++){
       let [x,y] = template.slice(i*2,i*2+2);
       let [a,b,c,d,e,f] = mat;
-      let x1 = a*x+b*y+e;
-      let y1 = c*x+d*y+f;
+      let x1 = a*x+c*y+e;
+      let y1 = b*x+d*y+f;
       x1 *=cnv.width;
       y1 *=cnv.height;
       ctx[i?'lineTo':'moveTo'](x1,y1);
@@ -276,7 +276,8 @@ function getResampledByCount(poly0,count){
   return poly.slice(0,count);
 }
     
-let NSAMP = 64;
+let NSAMP = 72;
+let RSAMP = 24;
     
 let cnv0 = document.createElement("canvas");
 cnv0.width = 200;
@@ -304,9 +305,27 @@ function solve(){
   if (template.length < 2 || pts.length < 2){
     return;
   }
-  points = getResampledByCount(pts,NSAMP).flat();
-  points.shape = [points.length/2,2];
-  mat = fit_polygon_resampled_affine_lstsq(points,template);
+  let ptre = getResampledByCount(pts,NSAMP);
+  
+//   let rss;
+//   points = ptre.flat();
+//   points.shape = [points.length/2,2];
+//   ;[mat,rss] = fit_polygon_resampled_affine_lstsq(points,template);
+
+  let rmin = Infinity;
+  let imin = 0;
+  for (let i = 0; i <= RSAMP; i++){
+    let ps = ptre.slice(i).concat(ptre.slice(0,i)).flat();
+    ps.shape = [ps.length/2,2];
+    let [m,rss] = fit_polygon_resampled_affine_lstsq(ps,template);
+    if (rss < rmin){
+      points = ps;
+      rmin = rss;
+      mat = m;
+      imin = i;
+    }
+  }
+//   console.log(rmin);
 }
 
 let sel_tmpl = document.getElementById("sel-tmpl-l");
@@ -409,8 +428,8 @@ function animate(){
   for (let i = 0; i < template.length/2; i++){
     let [x,y] = template.slice(i*2,i*2+2);
     let [a,b,c,d,e,f] = mat;
-    let x1 = a*x+b*y+e;
-    let y1 = c*x+d*y+f;
+    let x1 = a*x+c*y+e;
+    let y1 = b*x+d*y+f;
     x1 *=cnv.width;
     y1 *=cnv.height;
     ctx.fillStyle = "red";
