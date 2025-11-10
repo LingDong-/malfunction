@@ -112,10 +112,10 @@ function solve(){
   let guesses = [
     [1,0,0,1,0,0],
     [-1,0,0,-1,0,0],
-    [1,0,0,-1,0,0],
-    [-1,0,0,1,0,0],
     [0,1,1,0,0,0],
     [0,-1,-1,0,0,0],
+    [1,0,0,-1,0,0],
+    [-1,0,0,1,0,0],
     [0,-1,1,0,0,0],
     [0,1,-1,0,0,0],
   ]
@@ -164,7 +164,7 @@ sel_tmpl.onchange = function(){
         0.5-0.5*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/16
       );
     }
-    NGUESS = 8;
+    NGUESS = 4;
   }else if (sel_tmpl.value == 'draw...'){
     template = [];
     NGUESS = 8;
