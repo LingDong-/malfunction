@@ -1,0 +1,54 @@
+<meta charset="UTF-8">
+<meta name="description" content="Procedurally generated Sponza Atrium in the Dither programming language">
+<style>
+  body{
+    font-family:sans-serif;
+    background:black;
+    color:white;
+    text-align:center;
+  }
+  a:link, a:visited, a:hover, a:active {
+    color: gainsboro;
+  }
+</style>
+<body>
+  <h1>Infinite Sponza</h1>
+  <p style="font-size:15px;margin-bottom:30px;">
+  A purely procedurally generated scene inspired by the <a href="https://en.wikipedia.org/wiki/Sponza_Palace">Sponza Atrium</a>, 
+  written in the <a href="https://dither-lang.netlify.app/">Dither</a> programming language, <br>
+  transpiled to run in the browser.
+  Original source code is available <a href="https://github.com/LingDong-/dither-sketches/blob/main/spomaze.dh">here</a>.
+  (c) <a href="https://lingdong.works/">Lingdong Huang</a> 2025
+  </p>
+  
+</body>
+<script src="script.js"></script>
+<script>
+  function check_gl(){
+    let cnvs = document.getElementsByTagName("canvas");
+    if (cnvs.length){
+      let gl = cnvs[0].getContext("webgl");
+      let renderer = "Unknown";
+      const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+      if (debugInfo) {
+        renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      }
+      div = document.createElement("div");
+      div.style = "font-size:12px; color:gainsboro; margin-top:50px"
+      div.innerHTML = `
+        Detected renderer: <b>${renderer}</b><br>
+        <i>This demo uses advanced WebGL features and might not run on certain browsers.
+        Enable dedicated GPU for your browser for optimal performance.</i>
+      `;
+      document.body.appendChild(div);
+    }else{
+      setTimeout(check_gl,500);
+    }
+  }
+  check_gl();
+</script>
+
+<script>
+  ;;(function(){var script=document.createElement("script");script.onload=function(){var stats=new Stats();document.body.appendChild(stats.dom);stats.dom.style.left=null;stats.dom.style.right=0;requestAnimationFrame(function loop(){stats.update();requestAnimationFrame(loop)});};script.src="https://mrdoob.github.io/stats.js/build/stats.min.js";document.head.appendChild(script);})();
+
+</script>
