@@ -226,7 +226,6 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
 </body>
 `];
 
-
 function main(){
   function shortid(){
     var id = "";
