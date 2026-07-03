@@ -1,4 +1,4 @@
-const fs = require('fs');
+  const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -131,11 +131,98 @@ ${download_script("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.1/addo
     <div id="dir" style="position:absolute;left:10px;top:300px;width:185px;height:calc(100% - 245px);overflow:scroll;font-size:14px;">
       
     </div>
+    <button id="btn-help" style="position:absolute;width:25px;height:22px;left:4px;bottom:4px">?</button>
   </div>
   <div id="edit" class="darkable" style="position:absolute;left:200px;top:0px;width:calc(50% - 100px);height:100%;border-right:1px solid silver; border-left:1px solid silver"></div>
   <div id="out" style="background:white;position:absolute;left:calc(50% + 102px);top:0px;width:calc(50% - 102px);height:calc(100% - 200px);"></div>
   <div id="log" class="darkable" style="background:white;position:absolute;left:calc(50% + 102px);top:calc(100% - 200px);width:calc(50% - 112px);height:190px;border-top:1px solid silver;font-size:14px;font-family:monospace;padding:5px;overflow:scroll;"></div>
 
+
+  <div id="help" style="display:none; position:absolute;background:white;z-index:1000;width:560px;height:calc(80% - 80px);overflow:scroll;border:1px solid silver;left:calc(50% - 320px);top:10%;padding:40px;font-size:14px">
+    <button style="position:sticky;left:0px;top:0px;transform:translate(-30px,-30px)" onclick="document.getElementById('help').style.display='none'">X</button>
+    <p>
+      This is an <b>in-browser, client-side-only IDE</b> for web-based experiments/projects. 
+      It is part of the <a href="https://malfunction.netlify.app/">MALFUNCTION</a> website,
+      home for new web experiments (2025-) by <a href="https://lingdong.works">Lingdong Huang</a>, 
+      after the departure of <a href="https://glitch.com">Glitch</a>.
+      You can use this editor to write, preview, remix, share your own projects too! 
+      Here's how:
+    </p>
+    <h3> Quick Start </h3>
+    <ul>
+      <li> 
+        To try out the editor, you can directly start typing in the central code panel and click the
+        "▶" button to run/preview. You can add/upload/delete/open files from the left sidebar.
+        "[▶]" button opens preview in a new tab.
+      </li>
+    </ul>
+    <h3> Saving Your Project </h3>
+    <ul>
+      <li>
+        First, you need to <a href="https://github.com/new">have</a> your own <b>GitHub repo</b> where your project(s) (will) live.
+        The editor can work with existing projects you have in there, or create new project folders for you. 
+        Each project should/will be a top-level folder in the repo.
+      </li>
+      <li>
+        You also need to have a <b>GitHub access token</b>. 
+        You can genreate one specifically for your repo by going to 
+        <a href="https://github.com/settings/personal-access-tokens/new">https://github.com/settings/personal-access-tokens/new</a> 
+        and selecting your repo. A general token will also work if you already have one.
+      </li>
+      <li>
+        Type in your username/repo/folder in the upper-left navigator, and paste your access token. 
+        The editor is client-side only and does not send it to or store it on any servers. (<a href="make.js">source code</a>).
+      </li>
+      <li>
+        Click the "Pull" button if you're working on an existing project, or the "Push" button to create a new project.
+      </li>
+      <li>
+        To save your changes, click the "Push" button.
+      </li>
+    </ul>
+    <h3> Sharing </h3>
+    <ul>
+      <li>
+        You can copy and share the URL in your address bar, once you've opened/created a project. 
+        People do not need a GitHub access token to view/fiddle with/run the project. 
+        This only works if your projects repo is public though.
+      </li>
+      <li>
+        To actually host the projects yourself at your own url (instead of in this editor preview), 
+        you can simply enable <a href="https://pages.github.com/">GitHub Pages</a> for your repo. 
+      </li>
+    </ul>
+    <h3> Known Limitations </h3>
+    <ul>
+      <li>
+        Since the editor is client-side only, the preview feature patches functions such as "fetch()"
+        and detects linked scripts/assets with patterns such as 
+        "src=", "href=" and replaces them with blobs. 
+        If your URL is programmatically generated or stored in a variable and fetched without "fetch()"
+        you need to help the detector a bit by prefixing it
+        with the magical comment <code>/*__URL__*/</code>, e.g. 
+        <code>let link = /*__URL__*/"link/to/file.txt";</code>
+      </li>
+      <li>
+        The editor is currently experimental. It is recommanded to <b>backup important code elsewhere</b>.
+      </li>
+    </ul>
+    <h3> Why You Might Want to Try It Out Anyways </h3>
+    <ul>
+      <li>
+        You "own" your own projects. You can ditch this editor any time and use another. 
+        You do not need to create a separate account.
+      </li>
+      <li>
+        Tight integration with GitHub. Your projects are automatically git version controlled. 
+        You can use GitHub Issues, CI, Pages, etc.
+      </li>
+      <li>
+        It's free, extremely <a href="make.js">lightweight, and hackable</a>.
+        You can also host your own instance of this editor.
+      </li>
+    </ul>
+  <div>
 </body>
 `];
 
@@ -576,6 +663,17 @@ function main(){
       make_explorer();
     };
     input.click();
+  }
+
+  document.getElementById("btn-help").onclick = function(){
+    document.getElementById("help").style.display="block";
+  }
+  let action;
+  if (action = new URLSearchParams(window.location.search).get("action")){
+    console.log(action);
+    if (action == "help"){
+      document.getElementById("btn-help").onclick();
+    }
   }
 
   document.getElementById("edit").addEventListener('keydown', function(e) {
