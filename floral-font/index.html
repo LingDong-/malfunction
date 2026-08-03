@@ -1,0 +1,783 @@
+<meta charset="utf-8"></meta>
+<meta name="description" content="turn any TTF/OTF font to one formed of interlocking generative floral patterns">
+<style>
+  a:link, a:visited, a:hover, a:active {
+    color: firebrick;
+  }
+</style>
+<body style="background-color: black;background-image:url('bg.png');background-repeat:repeat;background-size:400px;margin:0px;overflow:scroll;font-family:'Times New Roman', serif;">
+
+<div id="article" style="position:relative;width:960px;margin:auto;margin-top:20px;margin-bottom:20px;background:floralwhite;border:5px solid black;">
+<div style="height:64px;font-size:54px;text-align:left;margin:0px;margin-left:128px;border-bottom:2px solid black;padding-left:4px">n-Line Floral Pattern Font Converter</div>
+<div style="width:128px;height:130px;left:0px;top:0px;position:absolute;border-right:2px solid black; border-bottom:2px solid black;font-size:100px;background:black" id="O"><img src="O.svg"></img></div>
+<div style="text-align:center;height:60px;padding-top:4px;border-bottom:2px solid black;margin-left:128px">
+  <span style="font-size:22px;">Typographic Application of the New Algorithm</span><br>
+  <span style="font-size:26px;"><a href="https://www.media.mit.edu/projects/non-overlapping-floral-patterns/overview/">&ldquo;Filling Arbitrary Shapes with Non-Overlapping Procedural Floral Patterns&rdquo;</a></span>
+</div>
+
+
+<div id="pan0" style="width:calc(50% - 12px);height:160px;padding:5px;font-family: sans-serif;">
+  <div style="font-size:20px;font-weight: bold;">I. Input Options</div>
+  Upload Font File (TTF/OTF):
+  <input id="fup" type="file" />
+  <br>
+
+  Unicode Range: <input id="inp-code0" type="number" value="32" style="width:70px"/>-<input id="inp-code1" type="number" value="126" style="width:70px"/> (inclusive)
+  <br>
+
+  Flower Type: <select id="sel-preset">
+    <option value="1">Preset #1</option>
+    <option value="2">Preset #2</option>
+    <option value="3">Preset #3</option>
+  </select>
+
+  Text Polarity: <select id="sel-inv">
+    <option value="1">Positive</option>
+    <option value="2">Negative (Inverted)</option>
+  </select><br>
+
+  Scale: <input id="inp-scale" type="range" min="400" max="800" value="500" oninput="this.nextSibling.innerHTML=this.value"/><span>500</span><span class="neg-show" style="display:none">x80%</span><br>
+  Thicken: <input id="inp-dilate" type="range" min="0" max="16" value="8" oninput="this.nextSibling.innerHTML=this.value"/><span>8</span><span class="neg-show" style="display:none">x200%</span><br>
+  <button id="btn-generate" style="font-size:18px" disabled>Generate ▶</button>
+</div>
+
+<div id="pan1" style="position:absolute;left:50%;top:132px;width:calc(50% - 10px);height:160px;padding:5px;font-family: sans-serif;">
+  <div style="font-size:20px;font-weight: bold;">II. Output Options</div>
+
+  Font Type: <select id="sel-colr">
+    <option value="2">Color (OTF COLR table)</option>
+    <option value="1">No Color (Classic TTF)</option>
+  </select><br>
+  Colors: 
+  <input id="col-0" type="color" value="#000000">
+  <input id="col-1" type="color" value="#b3e6cc">
+  <input id="col-2" type="color" value="#e6cc99">
+  <input id="col-3" type="color" value="#ff8066">
+  <br>
+
+  Font Name: <input id="inp-name" value="floral-font-ba287110-6012-4f09-b6bc-bc7027443572"/><br>
+
+  Status: <span id="status">Ready.</span><br>
+  <button style="font-size:18px" onclick="document.getElementById('btn-go').onclick()">Update Preview</button>
+  <button id="btn-download" style="font-size:18px">Download Font</button>
+
+</div>
+
+<div id="pan2" style="width:100%;padding:5px;font-family: sans-serif;">
+  <div style="font-size:20px;font-weight: bold;">III. Preview</div>
+
+  Text: <input id="inp-str" size="80" value=" !&quot;#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+  /><select onchange="console.log(this.previousSibling.value=this.value)">
+    <option value=" !&quot;#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~">Printable ASCII</option>
+    <option value="AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890">AaBbCc</option>
+    <option value="Sphinx of Black Quartz, Judge My Vow!">Black Sphinx</option>
+    <option value="The Quick Brown Fox Jumps over the Lazy Dog">Brown Fox</option>
+  </select>
+  Size: <input id="inp-pvfs" type="number" value="200" style="width:70px"/>
+  <button id="btn-go">Go</button><br>
+</div>
+<div id="out-0" style="width:960px"></div>
+<div id="out-1" style="width:960px;background:white"></div>
+
+<div style="font-size:18px;padding:5px;">
+  <table><tr>
+    <td id="logos" style="width:200px">
+
+    </td>
+    <td>
+      The core of this demo is implemented in the 
+      <a href="https://dither-lang.netlify.app/">Dither Programming Language</a>,
+      a new programming language for creative coding,
+      transpiled to and wrapped with JavaScript to run in the browser.
+      Source code can be found 
+      <a href="https://github.com/LingDong-/dither-sketches/blob/main/orntxt.dh">here</a> and
+      <a href="https://github.com/LingDong-/malfunction/blob/main/floral-font">here</a>.<br>
+      <b style="text-align: right; display: block;">
+        <a href="https://lingdong.works">Lingdong Huang</a> 2026, MIT Media Lab.
+      </b>
+    </td>
+  </tr></table>
+</div>
+
+</div>
+
+
+
+</body>
+<script src="caslon.js"></script>
+<script src="fontinfo.js"></script>
+<script src="findContours.js"></script>
+<script src="otfcolrw.js"></script>
+<script src="ttfw.js"></script>
+<script src="main.js"></script>
+<script>
+
+let article = document.getElementById("article")
+
+let font = CASLON;
+let file = null;
+
+let fup = document.getElementById("fup");
+fup.type = "file";
+fup.accept = ".ttf,.otf";
+
+let W = 1024;
+let H = 1024;
+let offset_x = 150.0;
+let offset_y = 800.0;
+
+
+document.getElementById("sel-preset").onchange = function(){
+  let cs = [
+    [
+      [0.0,0.0,0.0],
+      [0.7,0.9,0.8],
+      [0.9,0.8,0.6],
+      [1.0,0.5,0.4],
+    ],[
+      [0.0,0.0,0.0],
+      [0.6,0.7,0.5],
+      [0.9,0.8,0.6],
+      [1.0,0.8,0.4],
+    ],[
+      [0.0,0.0,0.0],
+      [0.6,0.9,0.8],
+      [0.9,0.8,0.6],
+      [1.0,0.7,0.8],
+    ]
+  ];
+  let n = Number(document.getElementById("sel-preset").value)-1;
+
+  for (let i = 0; i < 4; i++){
+    let c = cs[n][i];
+    let r = (~~(c[0]*255)).toString(16).padStart(2,'0');
+    let g = (~~(c[1]*255)).toString(16).padStart(2,'0');
+    let b = (~~(c[2]*255)).toString(16).padStart(2,'0');
+    document.getElementById(`col-${i}`).value = '#'+r+g+b;
+  }
+}
+
+
+let CFG = {
+  "scale": 500,
+  "code_first" : 32,
+  "code_last" : 126,
+  "need_kern": true,
+  "dilation": 8,
+}
+
+document.getElementById("inp-scale").onchange = function(){
+  let mul = [1,1,0.8][Number(document.getElementById("sel-inv").value)];
+  CFG.scale = Number(document.getElementById("inp-scale").value) * mul;
+}
+document.getElementById("inp-dilate").onchange = function(){
+  let mul = [1,1,2.0][Number(document.getElementById("sel-inv").value)];
+  CFG.dilation = Number(document.getElementById("inp-dilate").value) * mul;
+}
+document.getElementById("inp-code0").onchange = function(){
+  CFG.code_first = Number(document.getElementById("inp-code0").value)
+}
+document.getElementById("inp-code1").onchange = function(){
+  CFG.code_last = Number(document.getElementById("inp-code1").value)
+}
+
+
+document.getElementById("sel-inv").onchange = function(){
+  Array.from(document.getElementsByClassName("neg-show")).forEach((e)=>{
+    e.style.display = document.getElementById("sel-inv").value == "2" ? "inline-block" : "none"
+  })
+  document.getElementById("inp-scale").onchange();
+  document.getElementById("inp-dilate").onchange();
+}
+
+function getfontinfo(bytes){
+  let fp = {
+    pos:0,
+    buf:bytes
+  };
+  let head = table_lookup(fp, "head");
+  fseek(fp,head+18,SEEK_SET);
+  let upM = u16be(fp);
+
+  let hhea = table_lookup(fp, "hhea");
+  fseek(fp,hhea+4,SEEK_SET);
+  let asc = i16be(fp);
+  let dsc = i16be(fp);
+  let line_gap = i16be(fp);
+
+  let glyphs = [];
+  let kerning = [];
+
+  for (let i = CFG.code_first; i <= CFG.code_last; i++){
+    let gid = cmap_lookup(fp,i);
+    ;[advw,lsb] = hmtx_lookup(fp,gid);
+    glyphs.push({
+      unicode:i,
+      advw,
+      lsb
+    });
+    for (let j = CFG.code_first; j <= CFG.code_last; j++){
+      let gjd = cmap_lookup(fp,j);
+      // gjd = gsub_lookup(fp,"onum",gjd,[0],[]);
+      let k = 0;
+      k += kern_lookup(fp,gid,gjd);
+      if (!k){
+        k += gpos_kern_lookup(fp,gid,gjd);
+      }
+      if (k){
+        kerning.push({
+          l:i,
+          r:j,
+          val:k
+        })
+      }
+    }
+  }
+  return {asc,dsc,line_gap,upM,glyphs,kerning};
+}
+
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+function animation_frame() {
+  return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
+var waitFor = pred => new Promise(r => (function tick(){ pred() ? r() : requestAnimationFrame(tick) })());
+
+async function trace_input_font(fontFamily){
+  let clips = [];
+  for (let i = CFG.code_first; i <= CFG.code_last; i++){
+    let cnv = document.createElement("canvas");
+    cnv.width = W;
+    cnv.height = H;
+    let ctx = cnv.getContext('2d');
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = "silver";
+    ctx.font = `${CFG.scale}px ${fontFamily}`;
+    let c = String.fromCharCode(i);
+    ctx.lineWidth = CFG.dilation*2;
+    ctx.strokeText(c,offset_x,offset_y);
+    ctx.fillText(c,offset_x,offset_y);
+    // article.appendChild(cnv);
+    let imdata = ctx.getImageData(0,0,W,H).data;
+    let F = [];
+    for (let j = 0; j < imdata.length; j+=4){
+      if (imdata[j]>128){
+        F.push(1);
+      }else{
+        F.push(0);
+      }
+    }
+    let contours = FindContours.findContours(F,W,H);
+    for (let j = 0; j < contours.length; j++){
+      contours[j] = FindContours.approxPolyDP(contours[j].points,5.0).reverse();
+    }
+    clips.push(contours);
+
+    font.glyphs[i-CFG.code_first].clip = contours.map(p=>p.map(
+      ([x,y])=>([
+        (x - offset_x)*font.upM / CFG.scale,
+        (y - offset_y)*font.upM / CFG.scale
+      ])
+    ))
+
+    document.getElementById("status").innerHTML = `Tracing input font... (${i-CFG.code_first+1}/${CFG.code_last-CFG.code_first+1})`
+    run_testbed(String.fromCharCode(...new Array(CFG.code_last-CFG.code_first+1).fill(0).map((x,j)=>(CFG.code_first+j))))
+    await animation_frame();
+  }
+  return clips;
+}
+
+let layers = [];
+for (let j = 0; j < 4; j++) layers.push(new Uint8Array(W*2*H*2).fill(0));
+
+function retrace(cnv,trfm=(x,y)=>[x,y]){
+  let pixels = cnv.getContext('2d').getImageData(0,0,cnv.width,cnv.height).data;
+  for (let i = 0; i < layers.length; i++){
+    if (!layers[i] || layers[i].length < cnv.width*cnv.height) layers[i] = new Uint8Array(cnv.width*cnv.height).fill(0)
+    layers[i].fill(0);
+  }
+  for (let i = 0; i < cnv.height; i++){
+    for (let j = 0; j < cnv.width; j++){
+      let r = pixels[(i * cnv.width + j)*4 + 0]/255.0;
+      let g = pixels[(i * cnv.width + j)*4 + 1]/255.0;
+      let b = pixels[(i * cnv.width + j)*4 + 2]/255.0;
+      if (r < 0.9 || g < 0.9 || b < 0.9){
+        layers[0][i*cnv.width+j] = 1;
+      }
+      if (r < 0.5 && g > 0.5 && b > 0.5){
+        layers[1][i*cnv.width+j] = 1;
+      }
+      if (r > 0.5 && g > 0.5 && b < 0.5){
+        layers[2][i*cnv.width+j] = 1;
+      }
+      if (r > 0.5 && g < 0.5 && b > 0.5){
+        layers[3][i*cnv.width+j] = 1;
+      }
+    }
+  }
+  let contours = [];
+  for (let i = 0; i < layers.length; i++){
+    contours.push(FindContours.findContours(Array.from(layers[i]),cnv.width,cnv.height));
+  }
+  for (let k = 0; k < contours.length; k++){
+    for (let i = 0; i < contours[k].length; i++){
+      contours[k][i] = FindContours.approxPolyDP(contours[k][i].points,1.0);
+      for (let j = 0; j < contours[k][i].length; j++){
+        contours[k][i][j][0] *= 0.5;
+        contours[k][i][j][1] *= 0.5;
+        ;[contours[k][i][j][0], contours[k][i][j][1]] = trfm(...contours[k][i][j]);
+      }
+    }
+  }
+  return contours;
+}
+
+
+function testbed(str,scl,corl){
+  let x0 = 0;
+  let y0 = font.upM;
+  let svg = ``;
+  let maxw = 960/scl;
+  console.log(str);
+
+  let lines = str.split(' ');
+  for (let i = 0; i < lines.length-1; i++) lines[i]+=' ';
+
+  let ws = [];
+  for (let i = 0; i < lines.length; i++){
+    let w = 0;
+    let ww = [];
+    for (let j = 0; j < lines[i].length; j++){
+      let idx = lines[i].charCodeAt(j) - CFG.code_first;
+      console.log(idx,lines[i],lines[i].charCodeAt(j),font.glyphs[idx]);
+      w += font.glyphs[idx].advw;
+      ww.push(w);
+    }
+    ws.push(ww);
+  }
+
+  for (let i = 0; i < lines.length-1; i++){
+    if (ws[i].at(-1) + ws[i+1].at(-1) <= maxw){
+      lines[i] += lines[i+1];
+      for (let j = 0; j < ws[i+1].length; j++){
+        ws[i+1][j] += ws[i].at(-1);
+      }
+      ws[i] = ws[i].concat(ws[i+1]);
+      ws.splice(i+1,1);
+      lines.splice(i+1,1);
+      i--;
+    }
+  }
+
+
+
+  for (let i = 0; i < lines.length; i++){
+    if (ws[i].at(-1) > maxw){
+      for (let j = ws[i].length-2; j >= 1; j --){
+        if (ws[i][j] <= maxw){
+          console.log(j,ws[i][j],maxw);
+          let nl = lines[i].slice(j+1);
+          let nw = ws[i].slice(j+1).map(x=>(x-ws[i][j]));
+          lines.splice(i+1,0,nl);
+          ws.splice(i+1,0,nw);
+          lines[i] = lines[i].slice(0,j+1);
+          ws[i] = ws[i].slice(0,j+1);
+          i--;
+          break;
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < lines.length-1; i++){
+    if (lines[i] == ' '){
+      // lines[i+1] = ' ' + lines[i+1];
+      lines.splice(i,1);
+      i--;
+    }
+  }
+
+  console.log(lines);
+  console.log(ws);
+  console.log(corl);
+
+  for (let n = 0; n < lines.length; n++){
+    for (let m = 0; m < lines[n].length; m++){
+      let idx = lines[n].charCodeAt(m) - CFG.code_first;
+
+      if (corl[0] && font.glyphs[idx].clip || (corl[1] && !font.glyphs[idx].layers && font.glyphs[idx].clip)){
+        let clip = font.glyphs[idx].clip;
+        svg += `<path d="`;
+        for (let j = 0; j < clip.length; j++){
+          for (let k = 0; k < clip[j].length; k++){
+            let [x,y] = clip[j][k];
+            x += x0;
+            y += y0;
+            x*= scl;
+            y*= scl;
+            svg += ((k == 0) ? "M" : "L") + `${x} ${y} `;
+          }
+        }
+        svg += `" stroke="black" fill="#777" fill-opacity="0.3"/>`;
+      }
+
+      if (corl[1] && font.glyphs[idx].layers){
+        let layers = font.glyphs[idx].layers;
+        for (let i = 0; i < layers.length; i++){
+          svg += `<path d="`;
+          for (let j = 0; j < layers[i].length; j++){
+            for (let k = 0; k < layers[i][j].length; k++){
+              let [x,y] = layers[i][j][k];
+              x += x0;
+              y += y0;
+              x*= scl;
+              y*= scl;
+              svg += ((k == 0) ? "M" : "L") + `${x} ${y} `;
+            }
+          }
+          if (corl[1] == 1){
+            svg += `" stroke="none" fill="${["black","white","white","white"][i]}"/>`;
+          }else{
+            svg += `" stroke="none" fill="${[
+              document.getElementById("col-0").value,
+              document.getElementById("col-1").value,
+              document.getElementById("col-2").value,
+              document.getElementById("col-3").value,
+            ][i]}"/>`;
+          }
+        }
+      }
+
+      x0 += font.glyphs[idx].advw //+ font.upM*0.1*scl;
+    }
+    x0 = 0;
+    y0 += font.upM*1.1;
+  }
+  let hh = (y0-font.upM*0.5)*scl;
+  svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${960}" height="${hh}">`
+    +`<rect x="0" y="0" width="${960}" height="${hh}" fill="${1 ? '#111' : '#fff'}"/>`
+    + svg;
+  svg += `</svg>`;
+
+  return svg;
+}
+
+function run_testbed(str){
+  let scl = Number(document.getElementById("inp-pvfs").value) / font.upM;
+  // document.getElementById("out-0").innerHTML = testbed(str, scl/4, [1,0]);
+  document.getElementById("out-1").innerHTML = testbed(str, scl, [0, Number(document.getElementById("sel-colr").value)]);
+}
+
+document.getElementById("btn-go").onclick = function(){
+  run_testbed(document.getElementById("inp-str").value);
+}
+document.getElementById("btn-go").onclick();
+
+document.getElementById("inp-str").addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.keyCode === 13) {
+    e.preventDefault();
+    document.getElementById("btn-go").onclick();
+  }
+});
+document.getElementById("inp-pvfs").addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.keyCode === 13) {
+    e.preventDefault();
+    document.getElementById("btn-go").onclick();
+  }
+});
+
+
+
+async function process_clips(clips){
+  let cnv0 = document.createElement("canvas");
+  let ctx0 = cnv0.getContext('2d');
+  for (let i = 0; i < clips.length; i++){
+    console.log(i,'/',clips.length,JSON.stringify(clips[i]));
+    let cnv = (await $MAIN(
+      W,H,
+      clips[i],
+      [[0.0,0.0,0.0],
+       [0.0,1.0,1.0],
+       [1.0,1.0,0.0],
+       [1.0,0.0,1.0]],
+      Number(document.getElementById('sel-preset').value), 0x5EED)).__canvas;
+    cnv.style = "width:256px;height:256px";
+    cnv0.width = cnv.width;
+    cnv0.height = cnv.height;
+    ctx0.fillStyle = "white";
+    ctx0.fillRect(0,0,cnv0.width,cnv0.height);
+    ctx0.drawImage(cnv,0,0);
+    // article.appendChild(cnv);
+    document.getElementById("status").innerHTML = `Generating design... (${i+1}/${clips.length})`
+    await animation_frame();
+
+    font.glyphs[i].layers = retrace(cnv0,(x,y)=>[
+      (x - offset_x)*font.upM / CFG.scale,
+      (y - offset_y)*font.upM / CFG.scale
+    ]);
+    run_testbed(String.fromCharCode(...new Array(clips.length).fill(0).map((x,j)=>(CFG.code_first+j))));
+    document.getElementById("status").innerHTML = `Tracing design... (${i+1}/${clips.length})`
+    await animation_frame();
+  }
+}
+
+
+function get_bbox(points){
+  let xmin = Infinity;
+  let ymin = Infinity;
+  let xmax = -Infinity;
+  let ymax = -Infinity
+  for (let i = 0;i < points.length; i++){
+    let x = points[i][0];
+    let y = points[i][1];
+    xmin = Math.min(xmin,x);
+    ymin = Math.min(ymin,y);
+    xmax = Math.max(xmax,x);
+    ymax = Math.max(ymax,y);
+  }
+  return {xmin,ymin,xmax,ymax};
+}
+
+async function process_clips_inv(clips){
+  let cnv0 = document.createElement("canvas");
+  let ctx0 = cnv0.getContext('2d');
+  
+  let bbs = clips.map(p=>get_bbox(p.flat()));
+
+  // let w = 0;
+  // for (let i = 0; i < bbs.length; i++){
+  //   w = Math.max(bbs[i].xmax-bbs[i].xmin, w);
+  //   w = Math.max(bbs[i].ymax-bbs[i].ymin, w);
+  // }
+  // w = Math.ceil(w);
+
+  let w = CFG.scale;
+
+  let marg = 10;
+  for (let i = 0; i < clips.length; i++){
+    console.log(i,'/',clips.length,JSON.stringify(clips[i]));
+
+    let ofx = -(bbs[i].xmin + bbs[i].xmax)*0.5 + w/2 + marg
+    let ofy = -(bbs[i].ymin + bbs[i].ymax)*0.5 + w/2 + marg
+    let clip = clips[i].map(p=>p.map(([x,y])=>[
+      x + ofx,
+      y + ofy,
+    ]).reverse());
+    if (clip.length){
+      clip.unshift([[marg,marg],[marg+w,marg],[marg+w,marg+w],[marg,marg+w]]);
+    }
+
+    console.log(JSON.stringify(clip))
+    let cnv = (await $MAIN(
+      w+marg*2,w+marg*2,
+      clip,
+      [[0.0,0.0,0.0],
+       [0.0,1.0,1.0],
+       [1.0,1.0,0.0],
+       [1.0,0.0,1.0]],
+      Number(document.getElementById('sel-preset').value), 0x5EED, 0.0012)).__canvas;
+    
+    let ctx = cnv.getContext('2d');
+    let chr = String.fromCharCode(CFG.code_first + i);
+    ctx.font = `${CFG.scale}px ${font.name}`;
+    ctx.fillStyle = "#f0f";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1.5;
+    ctx.fillText(chr,ofx + offset_x, ofy + offset_y);
+    ctx.strokeText(chr,ofx + offset_x, ofy + offset_y);
+    
+    console.log(ctx.font, ofx + offset_x, ofy + offset_y);
+
+    cnv.style = "width:256px;height:256px";
+    cnv0.width = cnv.width;
+    cnv0.height = cnv.height;
+    ctx0.fillStyle = "white";
+    ctx0.fillRect(0,0,cnv0.width,cnv0.height);
+    ctx0.drawImage(cnv,0,0);
+
+    // article.appendChild(cnv);
+    document.getElementById("status").innerHTML = `Generating design... (${i+1}/${clips.length})`
+    await animation_frame();
+
+    font.glyphs[i].layers = retrace(cnv0,(x,y)=>[
+      (x)*font.upM / CFG.scale,
+      (y-w)*font.upM / CFG.scale
+    ]);
+    font.glyphs[i].advw = w*font.upM/CFG.scale * 1.05;
+    font.glyphs[i].lsb = 0;
+    for (let j = 0; j < font.kerning.length; j++){
+      if (font.kerning[j].l == font.glyphs[i].unicode){
+        font.kerning[j].val = 0;
+      }
+    }
+
+    run_testbed(String.fromCharCode(...new Array(clips.length).fill(0).map((x,j)=>(CFG.code_first+j))));
+    document.getElementById("status").innerHTML = `Tracing design... (${i+1}/${clips.length})`
+    await animation_frame();
+  }
+}
+
+
+fup.addEventListener('change', function(e) {
+  font = null;
+  file = e.target.files[0];
+  if (!file) return;
+  document.getElementById("btn-generate").disabled = false;
+  document.getElementById("status").innerHTML = "Ready to generate."
+
+});
+
+
+document.getElementById("btn-generate").onclick = async function(){
+  document.getElementById("status").innerHTML = "Initializing..."
+  document.getElementById("btn-download").disabled = true;
+  let fileReader = new FileReader();
+  fileReader.onload = function(fileLoadedEvent){
+    let ab = fileLoadedEvent.target.result;
+    let bytes = new Uint8Array(ab);
+    font = getfontinfo(bytes);
+  }
+  fileReader.readAsArrayBuffer(file);
+  const fontUrl = URL.createObjectURL(file);
+  const fontName = 'user-font-'+uuidv4();
+  const customFont = new FontFace(fontName, `url(${fontUrl})`);
+  customFont.load().then(async function(loadedFont) {
+    document.fonts.add(loadedFont);
+    await waitFor(() => font !== null);
+    font.name = fontName;
+    let clips = await trace_input_font(fontName);
+    if (document.getElementById("sel-inv").value == "1"){
+      await process_clips(clips);
+    }else{
+      await process_clips_inv(clips);
+    }
+    URL.revokeObjectURL(fontUrl);
+    document.getElementById("status").innerHTML = "Ready.";
+    document.getElementById("btn-download").disabled = false;
+  })
+}
+
+
+function download_bin(data, fileName) {
+  const blob = new Blob([data], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+}
+
+
+function minilogo(mat){
+  let w = 40;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}" style="display:inline-block;margin:5px">`;
+  for (let i = 0; i < mat.length; i++){
+    for (let j = 0; j < mat[i].length; j++){
+      let v = mat[i][j];
+      if (v != '#') continue;
+      svg += `<rect x="${j/mat[i].length*w}" y="${i/mat.length*w}" width="${w/mat[i].length}" height="${w/mat.length}" fill="black"/>`;
+    }
+  }
+  svg += `</svg>`;
+  return svg;
+}
+
+document.getElementById("logos").innerHTML = minilogo([
+  "####...",
+  "...#...",
+  "...#...",
+  "#..####",
+  "#.....#",
+  "#.....#",
+  "####..#",
+])+minilogo([
+  "#.#####",
+  "#.#....",
+  "#.#####",
+  "#.....#",
+  "#.#.###",
+  "#.#....",
+  "#######",
+])+minilogo([
+  "####.#.#.......",
+  "#####.#.#.#.#.#",
+  "##.#.#.#.#.....",
+  "#######.#.#.#..",
+  "####.#.#.......",
+  "#####.#.#.#.#.#",
+  "##.#.#.#.#.....",
+  "#######.#.#.#..",
+  "####.#.#.......",
+  "#####.#.#.#.#.#",
+  "##.#.#.#.#.....",
+  "#######.#.#.#..",
+  "####.#.#.......",
+  "#####.#.#.#.#.#",
+  "##.#.#.#.#.....",
+  "#######.#.#.#..",
+])
+
+document.getElementById("btn-download").onclick = async function(){
+  let font_name = document.getElementById("inp-name").value;
+  let mode = Number(document.getElementById("sel-colr").value);
+
+  let info = {
+    family: font_name,
+    style : "Regular",
+    upM : font.upM,
+    asc : font.asc,
+    dsc : font.dsc,
+  }
+  let glyphs = [];
+  for (let i = 0; i < font.glyphs.length; i++){
+    let g = {};
+    g.unicode = font.glyphs[i].unicode;
+    g.lsb = font.glyphs[i].lsb;
+    g.advw = font.glyphs[i].advw;
+
+    let p0 = font.glyphs[i].layers[0].map(p=>p.map(([x,y])=>[x,-y]));
+    let p1 = font.glyphs[i].layers[1].map(p=>p.map(([x,y])=>[x,-y]));
+    let p2 = font.glyphs[i].layers[2].map(p=>p.map(([x,y])=>[x,-y]));
+    let p3 = font.glyphs[i].layers[3].map(p=>p.map(([x,y])=>[x,-y]));
+
+    if (mode == 1){
+      g.contours = p1.concat(p2).concat(p3);
+    }else{
+      g.layers = [
+        {color:0,contours:p0},
+        {color:1,contours:p1},
+        {color:2,contours:p2},
+        {color:3,contours:p3},
+      ];
+    }
+    glyphs.push(g);
+  }
+  let palette = [];
+  for (let i = 0; i < 4; i++){
+    let c = Number('0x'+document.getElementById(`col-${i}`).value.slice(1));
+    let r = (c >> 16) & 0xff;
+    let g = (c >> 8) & 0xff;
+    let b = c & 0xff;
+    palette.push([r,g,b]);
+  }
+  console.log(palette)
+
+  if (mode == 1){
+    let bytes = encode_ttf(info, glyphs, font.kerning);
+    download_bin(bytes, font_name+".ttf");
+  }else{
+    let bytes = encode_otf_colr(info, glyphs, palette, font.kerning);
+    download_bin(bytes, font_name+".otf");
+  }
+}
+
+</script>
