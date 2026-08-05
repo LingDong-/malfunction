@@ -31,11 +31,12 @@
     <option value="1">Preset #1</option>
     <option value="2">Preset #2</option>
     <option value="3">Preset #3</option>
+    <option value="0">Random</option>
   </select>
 
   Text Polarity: <select id="sel-inv">
     <option value="1">Positive</option>
-    <option value="2">Negative (Inverted)</option>
+    <option value="2">Negative (Invert)</option>
   </select><br>
 
   Scale: <input id="inp-scale" type="range" min="400" max="800" value="500" oninput="this.nextSibling.innerHTML=this.value"/><span>500</span><span class="neg-show" style="display:none">x80%</span><br>
@@ -55,6 +56,7 @@
   <input id="col-1" type="color" value="#b3e6cc">
   <input id="col-2" type="color" value="#e6cc99">
   <input id="col-3" type="color" value="#ff8066">
+  <button onclick="[0,1,2,3].map(x=>document.getElementById('col-'+x).value='#'+(~~(Math.random()*0xffffff)).toString(16).padStart(6,'0'))">Randomize</button>
   <br>
 
   Font Name: <input id="inp-name" value="floral-font-ba287110-6012-4f09-b6bc-bc7027443572"/><br>
@@ -139,6 +141,10 @@ function show_help(){
     However we do not host any font files, so to make any modifications you must upload a font yourself. 
   </p>
   <p>
+    The color font output is supported via the COLR(v0)/CPAL table from the <a href="https://learn.microsoft.com/en-us/typography/opentype/spec/colr">OTF specification</a>.
+    Most modern systems support it by default, though some softwares might exhibit quirks.
+  </p>
+  <p>
     You can find more info about this project at the bottom of this page.
   </p>
   `
@@ -161,6 +167,14 @@ let offset_x = 150.0;
 let offset_y = 800.0;
 
 
+function get_preset(){
+  let v = Number(document.getElementById("sel-preset").value);
+  if (v == 0){
+    v = ~~(Math.random()*2.9999) + 1;
+  }
+  return v;
+}
+
 document.getElementById("sel-preset").onchange = function(){
   let cs = [
     [
@@ -181,6 +195,7 @@ document.getElementById("sel-preset").onchange = function(){
     ]
   ];
   let n = Number(document.getElementById("sel-preset").value)-1;
+  if (n < 0) return;
 
   for (let i = 0; i < 4; i++){
     let c = cs[n][i];
@@ -378,6 +393,17 @@ function testbed(str,scl,corl){
   let y0 = font.upM;
   let svg = ``;
   let maxw = 960/scl;
+
+  let fstr = '';
+  for (let i = 0; i < str.length; i++){
+    let idx = str.charCodeAt(i) - CFG.code_first;
+    if (idx < 0 || idx > font.glyphs.length){
+      continue;
+    }
+    fstr += str.charAt(i);
+  }
+  str = fstr;
+
   console.log(str);
 
   let lines = str.split(' ');
@@ -541,7 +567,7 @@ async function process_clips(clips){
        [0.0,1.0,1.0],
        [1.0,1.0,0.0],
        [1.0,0.0,1.0]],
-      Number(document.getElementById('sel-preset').value), 0x5EED)).__canvas;
+      get_preset(), 0x5EED)).__canvas;
     cnv.style = "width:256px;height:256px";
     cnv0.width = cnv.width;
     cnv0.height = cnv.height;
@@ -616,7 +642,7 @@ async function process_clips_inv(clips){
        [0.0,1.0,1.0],
        [1.0,1.0,0.0],
        [1.0,0.0,1.0]],
-      Number(document.getElementById('sel-preset').value), 0x5EED, 0.0012)).__canvas;
+      get_preset(), 0x5EED, 0.0012)).__canvas;
     
     let ctx = cnv.getContext('2d');
     let chr = String.fromCharCode(CFG.code_first + i);
