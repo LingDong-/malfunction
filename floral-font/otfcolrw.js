@@ -67,7 +67,11 @@ function encode_otf_colr(info,glyphs,palette,kerning){
       }
     }
     if (!glyphs[i].bb) glyphs[i].bb = get_bbox(glyphs[i].layers.map(x=>[[x.bb.xmin,x.bb.ymin],[x.bb.xmax,x.bb.ymax]]).flat());
-
+    for (let k in glyphs[i].bb){
+      if (!Number.isFinite(glyphs[i].bb[k])){
+        glyphs[i].bb[k] = 0;
+      }
+    }
     for (let j = 0; j < glyphs[i].layers.length; j++){
       glyphs[i].layers[j].bb = glyphs[i].bb;
     }
@@ -149,64 +153,57 @@ function encode_otf_colr(info,glyphs,palette,kerning){
   tbl.maxp.push(0,0,0,0);
   tbl.maxp.push(0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 
-  // console.log(n_glyphs)
   for (let i = 0; i < n_glyphs; i++){
     tbl.hmtx.push(...u16(ginfos[i].advw));
     tbl.hmtx.push(...u16(ginfos[i].lsb));
-    // if (i < glyphs.length){
-    //   tbl.hmtx.push(...u16(glyphs[i].advw));
-    //   tbl.hmtx.push(...u16(glyphs[i].lsb));
-    // }else{
-    //   // tbl.hmtx.push(...u16(0));
-    //   // tbl.hmtx.push(...u16(0));
-    //   // tbl.hmtx.push(...u16(glyphs[i%glyphs.length].advw));
-    //   // console.log(glyphs[~~((i-glyphs.length)/3)].unicode)
-    //   // tbl.hmtx.push(...u16(glyphs[~~((i-glyphs.length)/3)+1].advw));
-    //   // tbl.hmtx.push(...u16(glyphs[~~((i-glyphs.length)/3)+1].lsb));
-    // }
   }
 
-  tbl.cmap.push(0,0,0,1 );
-  tbl.cmap.push(0,0,0,3 );
-  tbl.cmap.push(0,0,0,12);
+
+  tbl.cmap.push(0,0);
+  tbl.cmap.push(0,2);
+  const CMAP_SUB_OFFSET = 4 + 2*8;
+  tbl.cmap.push(0,3);
+  tbl.cmap.push(0,1);
+  tbl.cmap.push(...u32(CMAP_SUB_OFFSET));
+  tbl.cmap.push(0,0);
+  tbl.cmap.push(0,3);
+  tbl.cmap.push(...u32(CMAP_SUB_OFFSET));
+
+  let sub4start = tbl.cmap.length;
 
   tbl.cmap.push(0,4);
-  tbl.cmap.push(0,0);//length
   tbl.cmap.push(0,0);
-
+  tbl.cmap.push(0,0);
   let segs = [];
   for (let i = 0; i < glyphs.length; i++){
     if (segs.length && glyphs[i].unicode == segs.at(-1)[1]+1){
       segs.at(-1)[1]++;
-    }else{
-      segs.push([glyphs[i].unicode,glyphs[i].unicode]);
+    } else {
+      segs.push([glyphs[i].unicode, glyphs[i].unicode]);
     }
   }
   segs.push([0xffff,0xffff]);
 
-  tbl.cmap.push(...u16(segs.length*2));
-  let sr = 1<<(~~Math.log2(segs.length)+1);
-  tbl.cmap.push(...u16( sr ));
-  tbl.cmap.push(...u16( ~~Math.log2(sr/2) ));
-  tbl.cmap.push(...u16( 2*segs.length-sr ));
-  for (let i = 0; i < segs.length; i++){
-    tbl.cmap.push(...u16(segs[i][1]));
-  }
+  let segCountX2 = segs.length * 2;
+  tbl.cmap.push(...u16(segCountX2));
+  let sr = 1 << (~~Math.log2(segs.length));
+  tbl.cmap.push(...u16(sr * 2));
+  tbl.cmap.push(...u16(~~Math.log2(sr)));
+  tbl.cmap.push(...u16(segCountX2 - sr * 2));
+  for (let i = 0; i < segs.length; i++) tbl.cmap.push(...u16(segs[i][1]));
   tbl.cmap.push(0,0);
-  for (let i = 0; i < segs.length; i++){
-    tbl.cmap.push(...u16(segs[i][0]));
-  }
+  for (let i = 0; i < segs.length; i++) tbl.cmap.push(...u16(segs[i][0]));
   let ng = 0;
   for (let i = 0; i < segs.length-1; i++){
-    tbl.cmap.push(...u16(   (ng-segs[i][0]+65536)%65536 ));
-    ng += segs[i][1]-segs[i][0]+1;
+    tbl.cmap.push(...u16( (ng - segs[i][0] + 65536) % 65536 ));
+    ng += segs[i][1] - segs[i][0] + 1;
   }
   tbl.cmap.push(0,1);
-  for (let i = 0; i < segs.length; i++){
-    tbl.cmap.push(0,0);
-  }
-  let cmapl = tbl.cmap.length-12;
-  ;[tbl.cmap[14],tbl.cmap[15]] = u16(cmapl);
+  for (let i = 0; i < segs.length; i++) tbl.cmap.push(0,0);
+
+  let sub4len = tbl.cmap.length - sub4start;
+  tbl.cmap[sub4start+2] = (sub4len>>8)&0xff;
+  tbl.cmap[sub4start+3] = sub4len & 0xff;
 
 
   tbl.name.push(0,0,0,19*3);
@@ -332,6 +329,14 @@ function encode_otf_colr(info,glyphs,palette,kerning){
   function add_glyf(layer){
     let {contours,bb} = layer;
     tbl.loca.push(...u32(tbl_glyf.length));
+
+    contours = contours.filter(c => c.length > 0);
+    let totalPts = contours.reduce((a,c)=>a+c.length, 0);
+    if (contours.length === 0 || totalPts === 0){
+      while (tbl_glyf.length % 4) tbl_glyf.push(0);
+      return;
+    }
+
     tbl_glyf.push(...u16(contours.length));
     tbl_glyf.push(...u16(~~bb.xmin));
     tbl_glyf.push(...u16(~~bb.ymin));
@@ -365,6 +370,7 @@ function encode_otf_colr(info,glyphs,palette,kerning){
         py=~~y;
       }
     }
+    while (tbl_glyf.length % 4) tbl_glyf.push(0);
   }
   for (let i = 0; i < glyphs.length; i++){
     add_glyf(glyphs[i].layers[0]);
@@ -418,7 +424,7 @@ function encode_otf_colr(info,glyphs,palette,kerning){
   tbl['OS/2'].push(0,0);
   tbl['OS/2'].push(0,0,0,0,0,0,0,0,0,0);
 
-  tbl['OS/2'].push(0,0,0,0);
+  tbl['OS/2'].push(0,0,0,1);
   tbl['OS/2'].push(0,0,0,0);
   tbl['OS/2'].push(0,0,0,0);
   tbl['OS/2'].push(0,0,0,0);
@@ -429,10 +435,10 @@ function encode_otf_colr(info,glyphs,palette,kerning){
   tbl['OS/2'].push(...u16(glyphs.at(-1).unicode));
 
   tbl['OS/2'].push(...u16(info.asc));
-  tbl['OS/2'].push(...u16(info.dsc));
+  tbl['OS/2'].push(...u16(-info.dsc));
   tbl['OS/2'].push(...u16(info.line_gap??0));
   tbl['OS/2'].push(...u16(info.asc));
-  tbl['OS/2'].push(...u16(info.dsc));
+  tbl['OS/2'].push(...u16(-info.dsc));
 
   tbl['OS/2'].push(0,0,0,1);
   tbl['OS/2'].push(0,0,0,0);
