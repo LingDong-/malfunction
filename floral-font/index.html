@@ -287,11 +287,12 @@ function getfontinfo(bytes){
   return {asc,dsc,line_gap,upM,glyphs,kerning};
 }
 
-function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+function shortID(){
+  var id = "";
+  for (var i = 0; i < 5; i++){
+    id+=String.fromCharCode(~~(Math.random()*26)+0x61);
+  }
+  return id;
 }
 function animation_frame() {
   return new Promise(resolve => requestAnimationFrame(resolve));
@@ -406,7 +407,7 @@ function testbed(str,scl,corl){
   }
   str = fstr;
 
-  console.log(str);
+  // console.log(str);
 
   let lines = str.split(' ');
   for (let i = 0; i < lines.length-1; i++) lines[i]+=' ';
@@ -417,7 +418,7 @@ function testbed(str,scl,corl){
     let ww = [];
     for (let j = 0; j < lines[i].length; j++){
       let idx = lines[i].charCodeAt(j) - CFG.code_first;
-      console.log(idx,lines[i],lines[i].charCodeAt(j),font.glyphs[idx]);
+      // console.log(idx,lines[i],lines[i].charCodeAt(j),font.glyphs[idx]);
       w += font.glyphs[idx].advw;
       ww.push(w);
     }
@@ -443,7 +444,7 @@ function testbed(str,scl,corl){
     if (ws[i].at(-1) > maxw){
       for (let j = ws[i].length-2; j >= 1; j --){
         if (ws[i][j] <= maxw){
-          console.log(j,ws[i][j],maxw);
+          // console.log(j,ws[i][j],maxw);
           let nl = lines[i].slice(j+1);
           let nw = ws[i].slice(j+1).map(x=>(x-ws[i][j]));
           lines.splice(i+1,0,nl);
@@ -465,9 +466,9 @@ function testbed(str,scl,corl){
     }
   }
 
-  console.log(lines);
-  console.log(ws);
-  console.log(corl);
+  // console.log(lines);
+  // console.log(ws);
+  // console.log(corl);
 
   for (let n = 0; n < lines.length; n++){
     for (let m = 0; m < lines[n].length; m++){
@@ -517,6 +518,15 @@ function testbed(str,scl,corl){
       }
 
       x0 += font.glyphs[idx].advw //+ font.upM*0.1*scl;
+      if (lines[n][m+1]){
+        for (let i = 0; i < font.kerning.length; i++){
+          if (font.kerning[i].l == lines[n].charCodeAt(m) && font.kerning[i].r == lines[n].charCodeAt(m+1)){
+            // console.log(font.kerning[i])
+            x0 += font.kerning[i].val;
+            break;
+          }
+        }
+      }
     }
     x0 = 0;
     y0 += font.upM*1.1;
@@ -561,7 +571,7 @@ async function process_clips(clips){
   let cnv0 = document.createElement("canvas");
   let ctx0 = cnv0.getContext('2d');
   for (let i = 0; i < clips.length; i++){
-    console.log(i,'/',clips.length,JSON.stringify(clips[i]));
+    console.log(i,'/',clips.length);
     let cnv = (await $MAIN(
       W,H,
       clips[i],
@@ -636,7 +646,7 @@ async function process_clips_inv(clips){
       clip.unshift([[marg,marg],[marg+w,marg],[marg+w,marg+w],[marg,marg+w]]);
     }
 
-    console.log(JSON.stringify(clip))
+    // console.log(JSON.stringify(clip))
     let cnv = (await $MAIN(
       w+marg*2,w+marg*2,
       clip,
@@ -648,6 +658,8 @@ async function process_clips_inv(clips){
     
     let ctx = cnv.getContext('2d');
     let chr = String.fromCharCode(CFG.code_first + i);
+    ctx.resetTransform();
+    ctx.scale(2,2);
     ctx.font = `${CFG.scale}px ${font.name}`;
     ctx.fillStyle = "#f0f";
     ctx.strokeStyle = "#000";
@@ -699,6 +711,7 @@ fup.addEventListener('change', function(e) {
 
 document.getElementById("btn-generate").onclick = async function(){
   document.getElementById("status").innerHTML = "Initializing..."
+  document.getElementById("btn-generate").disabled = true;
   document.getElementById("btn-download").disabled = true;
   let fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent){
@@ -708,7 +721,8 @@ document.getElementById("btn-generate").onclick = async function(){
   }
   fileReader.readAsArrayBuffer(file);
   const fontUrl = URL.createObjectURL(file);
-  const fontName = 'user-font-'+uuidv4();
+  const fontName = 'userfont'+shortID();
+  console.log(fontName);
   const customFont = new FontFace(fontName, `url(${fontUrl})`);
   customFont.load().then(async function(loadedFont) {
     document.fonts.add(loadedFont);
@@ -723,6 +737,7 @@ document.getElementById("btn-generate").onclick = async function(){
     URL.revokeObjectURL(fontUrl);
     document.getElementById("status").innerHTML = "Ready.";
     document.getElementById("btn-download").disabled = false;
+    document.getElementById("btn-generate").disabled = false;
   })
 }
 
